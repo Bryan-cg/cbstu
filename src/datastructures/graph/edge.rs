@@ -28,7 +28,7 @@ impl Edge {
     pub fn endpoints(&self) -> (usize, usize) {
         (self.either, self.other)
     }
-    pub fn original_nodes(&self) -> (usize, usize) {
+    pub fn original_endpoints(&self) -> (usize, usize) {
         (self.original_either, self.original_other)
     }
     pub fn weight(mut self, weight: f64) -> Edge {
@@ -59,16 +59,18 @@ impl Edge {
     pub fn get_cost(&self) -> f64 {
         self.cost
     }
-    pub fn original_either(mut self, original_either: usize) -> Edge {
-        self.original_either = original_either;
-        self
-    }
-    pub fn original_other(mut self, original_other: usize) -> Edge {
-        self.original_other = original_other;
+    pub fn set_original_endpoints(mut self, either: usize, other: usize) -> Edge {
+        self.original_either = either;
+        self.original_other = other;
         self
     }
 }
 
+impl PartialOrd for Edge {
+    fn partial_cmp(&self, other: &Edge) -> Option<Ordering> {
+        self.weight.partial_cmp(&other.weight)
+    }
+}
 impl PartialEq for Edge {
     fn eq(&self, other: &Self) -> bool {
         self.either == other.either
@@ -94,7 +96,6 @@ fn builder_test() {
         .weight(10.0)
         .upgraded_weight(20.0)
         .cost(30.0)
-        .original_either(2)
-        .original_other(3);
+        .set_original_endpoints(2,3);
     assert_eq!(edge, edge_from_builder);
 }

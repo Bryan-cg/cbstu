@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, Kruskal};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::node::Node;
 
@@ -14,6 +15,10 @@ impl ImmutableGraph {
             nodes,
             edges,
         }
+    }
+
+    pub fn min_sum_st(&mut self, calculation_type: CalculationType) -> (Option<ImmutableGraph>, f64, f64) {
+        Kruskal::run(self, calculation_type)
     }
 
     pub fn nodes(&self) -> &Vec<Rc<Node>> {
@@ -52,6 +57,12 @@ impl ImmutableGraph {
     }
     pub fn is_spanning_tree(&self) -> bool {
         self.edges.len() == self.nodes.len() - 1
+    }
+    pub fn calculate_total_weight(&self) -> f64 {
+        self.edges.iter().fold(0.0, |acc, edge| acc + edge.get_weight())
+    }
+    pub fn calculate_total_cost(&self) -> f64 {
+        self.edges.iter().fold(0.0, |acc, edge| acc + edge.get_cost())
     }
 }
 
