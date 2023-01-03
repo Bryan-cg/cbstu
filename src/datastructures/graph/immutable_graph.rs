@@ -1,6 +1,6 @@
 use std::rc::Rc;
-use crate::datastructures::edge::Edge;
-use crate::datastructures::node::Node;
+use crate::datastructures::graph::edge::Edge;
+use crate::datastructures::graph::node::Node;
 
 /// Graph with immutable nodes and edges
 pub struct ImmutableGraph {
@@ -24,8 +24,16 @@ impl ImmutableGraph {
         &self.edges
     }
 
+    pub fn edges_mut(&mut self) -> &mut Vec<Rc<Edge>> {
+        &mut self.edges
+    }
+
     pub fn edges_copy(&self) -> Vec<Rc<Edge>> {
         self.edges.clone()
+    }
+
+    pub fn nodes_copy(&self) -> Vec<Rc<Node>> {
+        self.nodes.clone()
     }
 
     pub fn get_node(&self, id: usize) -> Option<&Rc<Node>> {
@@ -42,14 +50,17 @@ impl ImmutableGraph {
         // clones only the pointers to the nodes
         ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
     }
+    pub fn is_spanning_tree(&self) -> bool {
+        self.edges.len() == self.nodes.len() - 1
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::datastructures::edge::Edge;
-    use crate::datastructures::node::Node;
-    use crate::datastructures::graph::ImmutableGraph;
     use std::rc::Rc;
+    use crate::datastructures::graph::edge::Edge;
+    use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+    use crate::datastructures::graph::node::Node;
 
     #[test]
     fn test_get_edges_weight_lower_or_eq_than() {

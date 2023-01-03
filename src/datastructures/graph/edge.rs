@@ -25,7 +25,7 @@ impl Edge {
             upgraded: false,
         }
     }
-    pub fn nodes(&self) -> (usize, usize) {
+    pub fn endpoints(&self) -> (usize, usize) {
         (self.either, self.other)
     }
     pub fn original_nodes(&self) -> (usize, usize) {
