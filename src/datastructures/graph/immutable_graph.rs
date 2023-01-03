@@ -46,12 +46,11 @@ impl ImmutableGraph {
     }
     pub fn get_edges_weight_lower_or_eq_than(&self, weight: f64) -> ImmutableGraph {
         let mut res_edges = Vec::new();
-        self.edges.iter().for_each(|edge|
-            {
-                if edge.get_weight() <= weight {
-                    res_edges.push(Rc::clone(edge));
-                }
-            });
+        self.edges.iter().for_each(|edge| {
+            if edge.get_weight() <= weight {
+                res_edges.push(Rc::clone(edge));
+            }
+        });
         // clones only the pointers to the nodes
         ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
     }
@@ -63,6 +62,17 @@ impl ImmutableGraph {
     }
     pub fn calculate_total_cost(&self) -> f64 {
         self.edges.iter().fold(0.0, |acc, edge| acc + edge.get_cost())
+    }
+    pub fn negative_weights(&self) -> ImmutableGraph {
+        let mut res_edges = Vec::new();
+        self.edges.iter().for_each(|edge| {
+            let (v, w) = edge.endpoints();
+            res_edges.push(Rc::new(Edge::new(v, w)
+                .weight(-edge.get_weight())
+                .upgraded_weight(-edge.get_upgraded_weight())
+                .cost(edge.get_cost())));
+        });
+        ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
     }
 }
 

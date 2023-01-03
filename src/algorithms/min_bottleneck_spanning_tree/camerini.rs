@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use log::{debug, info};
 use crate::algorithms::quick_select::QuickSelect;
+use crate::algorithms::util::Util;
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::graph::node::Node;
@@ -86,11 +87,15 @@ impl MBST {
 
     fn correct_st_edges(st_edges: &[Rc<Edge>]) -> (Vec<Rc<Edge>>, f64) {
         let mut res = Vec::new();
-        let mut bottleneck = f64::INFINITY;
+        let inverse = matches!(st_edges[0].get_weight(), w if w < 0.0);
+        let mut bottleneck = match inverse {
+            true => f64::NEG_INFINITY,
+            false => f64::INFINITY,
+        };
         st_edges.iter().for_each(|edge| {
             let (u, v) = edge.endpoints();
             let (orig_u, orig_v) = edge.original_endpoints();
-            if edge.get_weight() < bottleneck { bottleneck = edge.get_weight(); }
+            bottleneck = Util::update_bottleneck(bottleneck, edge, inverse);
             if u == orig_u && v == orig_v {
                 res.push(Rc::clone(edge));
             } else {
@@ -169,5 +174,53 @@ mod tests {
         assert!(st_cam.is_some());
         assert!(st_cam.unwrap().is_spanning_tree());
         assert_eq!(bottleneck_cam, bottleneck_kruskal);
+    }
+
+    #[test]
+    fn test_negative_weights() {
+        let mut nodes = Vec::new();
+        for i in 0..8 {
+            nodes.push(Rc::new(Node::default(i)));
+        }
+        let mut edges = Vec::new();
+        vec![
+            (0, 1, -1.0),
+            (0, 2, -2.0),
+            (0, 3, -3.0),
+            (0, 4, -4.0),
+            (0, 5, -5.0),
+            (0, 6, -6.0),
+            (0, 7, -7.0),
+            (1, 2, -1.0),
+            (1, 3, -2.0),
+            (1, 4, -3.0),
+            (1, 5, -4.0),
+            (1, 6, -5.0),
+            (1, 7, -6.0),
+            (2, 3, -1.0),
+            (2, 4, -2.0),
+            (2, 5, -3.0),
+            (2, 6, -4.0),
+            (2, 7, -5.0),
+            (3, 4, -1.0),
+            (3, 5, -2.0),
+            (3, 6, -3.0),
+            (3, 7, -4.0),
+            (4, 5, -1.0),
+            (4, 6, -2.0),
+            (4, 7, -3.0),
+            (5, 6, -1.0),
+            (5, 7, -2.0),
+            (6, 7, -1.0),
+        ].iter().for_each(|(v, w, weight)| {
+            edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
+        });
+        let mut graph = ImmutableGraph::new(nodes, edges);
+        let (_, _, bottleneck_kruskal) = graph.min_sum_st(CalculationType::Weight);
+        let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
+        assert!(st_cam.is_some());
+        assert!(st_cam.unwrap().is_spanning_tree());
+        assert_eq!(bottleneck_cam, bottleneck_kruskal);
+        assert_eq!(bottleneck_cam, -4.0);
     }
 }

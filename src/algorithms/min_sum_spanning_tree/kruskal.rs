@@ -1,5 +1,7 @@
 use std::rc::Rc;
-use log::error;
+use log::{debug, error};
+use crate::algorithms::util::Util;
+use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::uf::union_find::UF;
 
@@ -13,17 +15,22 @@ pub enum CalculationType {
 pub struct Kruskal();
 
 impl Kruskal {
-    /// Returns a minimal spanning tree of the given graph, the total weight/cost of the tree and the bottleneck of the tree.
+    /// Returns a minimal spanning tree of the given graph, the total weight/cost of the tree and the bottleneck WEIGHT (not cost) of the tree.
     pub fn run(graph: &mut ImmutableGraph, calculation_type: CalculationType) -> (Option<ImmutableGraph>, f64, f64) {
         let mut st_edges = Vec::new();
         let mut weight = 0.0;
-        let mut bottleneck = f64::INFINITY;
+        let inverse = matches!(graph.edges()[0].get_weight(), w if w < 0.0);
+        let mut bottleneck = match inverse {
+            true => f64::NEG_INFINITY,
+            false => f64::INFINITY,
+        };
         match calculation_type {
             CalculationType::Cost => graph.edges_mut().sort_by(|a, b| a.get_cost().partial_cmp(&b.get_cost()).unwrap()),
             CalculationType::Weight => graph.edges_mut().sort_by(|a, b| a.get_weight().partial_cmp(&b.get_weight()).unwrap()),
         }
         let mut uf = UF::new(graph.nodes().len() as i32);
         for edge in graph.edges() {
+            debug!("{} - {}: {}", edge.endpoints().0, edge.endpoints().1, edge.get_cost());
             let (v, w) = edge.endpoints();
             if !uf.connected(v, w) {
                 uf.union(v, w);
@@ -31,15 +38,11 @@ impl Kruskal {
                 match calculation_type {
                     CalculationType::Cost => {
                         weight += edge.get_cost();
-                        if edge.get_cost() < bottleneck {
-                            bottleneck = edge.get_cost();
-                        }
+                        bottleneck = Util::update_bottleneck(bottleneck, edge, inverse);
                     }
                     CalculationType::Weight => {
                         weight += edge.get_weight();
-                        if edge.get_weight() < bottleneck {
-                            bottleneck = edge.get_weight();
-                        }
+                        bottleneck = Util::update_bottleneck(bottleneck, edge, inverse);
                     }
                 }
             }
@@ -173,39 +176,25 @@ mod tests {
     #[test]
     fn test_kruskal2() {
         let mut nodes = Vec::new();
-        for i in 0..8 {
+        for i in 0..=8 {
             nodes.push(Rc::new(Node::default(i)));
         }
         let mut edges = Vec::new();
         vec![
-            (0, 1, 1.0),
-            (0, 2, 2.0),
-            (0, 3, 3.0),
-            (0, 4, 4.0),
-            (0, 5, 5.0),
-            (0, 6, 6.0),
-            (0, 7, 7.0),
-            (1, 2, 1.0),
-            (1, 3, 2.0),
-            (1, 4, 3.0),
-            (1, 5, 4.0),
-            (1, 6, 5.0),
-            (1, 7, 6.0),
-            (2, 3, 1.0),
-            (2, 4, 2.0),
-            (2, 5, 3.0),
-            (2, 6, 4.0),
-            (2, 7, 5.0),
-            (3, 4, 1.0),
-            (3, 5, 2.0),
-            (3, 6, 3.0),
-            (3, 7, 4.0),
-            (4, 5, 1.0),
-            (4, 6, 2.0),
-            (4, 7, 3.0),
-            (5, 6, 1.0),
-            (5, 7, 2.0),
-            (6, 7, 1.0),
+            (7,6,1.0),
+            (8,2,2.0),
+            (6,5,2.0),
+            (0,1,4.0),
+            (2,5,4.0),
+            (8,6,6.0),
+            (2,3,7.0),
+            (7,8,7.0),
+            (0,7,8.0),
+            (1,2,8.0),
+            (3,4,9.0),
+            (5,4,10.0),
+            (1,7,11.0),
+            (3,5,14.0),
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
@@ -213,7 +202,39 @@ mod tests {
         let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Weight);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
-        assert_eq!(weight, 7.0);
+        assert_eq!(weight, 37.0);
         assert_eq!(bottleneck, 1.0);
+    }
+
+    #[test]
+    fn test_kruskal3() {
+        let mut nodes = Vec::new();
+        for i in 0..=8 {
+            nodes.push(Rc::new(Node::default(i)));
+        }
+        let mut edges = Vec::new();
+        vec![
+            (7,6,1.0),
+            (8,2,2.0),
+            (6,5,2.0),
+            (0,1,4.0),
+            (2,5,4.0),
+            (8,6,6.0),
+            (2,3,7.0),
+            (7,8,7.0),
+            (0,7,8.0),
+            (1,2,8.0),
+            (3,4,9.0),
+            (5,4,10.0),
+            (1,7,11.0),
+            (3,5,14.0),
+        ].iter().for_each(|(v, w, weight)| {
+            edges.push(Rc::new(Edge::new(*v, *w).cost(*weight)));
+        });
+        let mut graph = ImmutableGraph::new(nodes, edges);
+        let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Cost);
+        assert!(st.is_some());
+        assert!(st.unwrap().is_spanning_tree());
+        assert_eq!(weight, 37.0);
     }
 }
