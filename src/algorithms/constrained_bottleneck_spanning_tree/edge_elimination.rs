@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{info, warn};
+use log::{info, trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::util::{PivotResult, Util};
 use crate::datastructures::graph::edge::Edge;
@@ -51,7 +51,7 @@ impl EdgeElimination {
             let checked_a = Self::check_pivot(graph, remaining.clone(), pivot_a_weight, budget);
             match checked_a {
                 PivotResult::Feasible(st) => {
-                    info!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
+                    trace!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
                     min_weight = st.2;
                     final_st = Some(st);
                     remaining.retain(|e| e.get_weight() <= min_weight);
@@ -61,7 +61,7 @@ impl EdgeElimination {
                     let checked_b = Self::check_pivot(graph, remaining.clone(), pivot_b_weight, budget);
                     match checked_b {
                         PivotResult::Feasible(st) => {
-                            info!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
+                            trace!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
                             min_weight = st.2;
                             final_st = Some(st);
                             remaining.retain(|e| e.get_weight() <= min_weight);
@@ -69,7 +69,7 @@ impl EdgeElimination {
                             max = pivot_b;
                         }
                         PivotResult::Infeasible => {
-                            info!("Infeasible pivot_b");
+                            trace!("Infeasible pivot_b");
                             min = pivot_b + 1;
                         }
                     }
