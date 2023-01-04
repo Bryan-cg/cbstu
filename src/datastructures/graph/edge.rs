@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::hash::Hash;
 
 #[derive(Default, Debug, Clone)]
 pub struct Edge {
@@ -76,9 +77,22 @@ impl PartialEq for Edge {
         self.either == other.either
             && self.other == other.other
             && self.weight == other.weight
+            && self.upgraded_weight == other.upgraded_weight
+            && self.cost == other.cost
     }
 }
 impl Eq for Edge {}
+
+//todo: check if hasing is correct
+impl Hash for Edge {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.either.hash(state);
+        self.other.hash(state);
+        self.weight.to_bits().hash(state);
+        self.upgraded_weight.to_bits().hash(state);
+        self.cost.to_bits().hash(state);
+    }
+}
 
 #[test]
 fn builder_test() {

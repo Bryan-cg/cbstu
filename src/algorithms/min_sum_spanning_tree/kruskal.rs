@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use log::{debug, error};
 use crate::algorithms::util::Util;
-use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::uf::union_find::UF;
 
@@ -30,7 +29,6 @@ impl Kruskal {
         }
         let mut uf = UF::new(graph.nodes().len() as i32);
         for edge in graph.edges() {
-            debug!("{} - {}: {}", edge.endpoints().0, edge.endpoints().1, edge.get_cost());
             let (v, w) = edge.endpoints();
             if !uf.connected(v, w) {
                 uf.union(v, w);

@@ -8,6 +8,7 @@ pub struct Berman();
 
 impl Berman {
     pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+        info!("Solving Constrained bottleneck spanning tree problem with Berman's algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
         graph.edges_mut().sort_by(|a, b| a.get_weight().partial_cmp(&b.get_weight()).unwrap());
         Self::dual_bound_search(&graph, budget)

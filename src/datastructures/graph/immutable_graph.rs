@@ -1,9 +1,12 @@
 use std::rc::Rc;
+use crate::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
 use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, Kruskal};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::node::Node;
+use crate::print_edges;
 
 /// Graph with immutable nodes and edges
+//todo: nodes: Rc<Vec<Rc<Node>>>
 pub struct ImmutableGraph {
     nodes: Vec<Rc<Node>>,
     edges: Vec<Rc<Edge>>,
@@ -19,6 +22,10 @@ impl ImmutableGraph {
 
     pub fn min_sum_st(&mut self, calculation_type: CalculationType) -> (Option<ImmutableGraph>, f64, f64) {
         Kruskal::run(self, calculation_type)
+    }
+
+    pub fn min_bot_st(&mut self) -> (Option<ImmutableGraph>, f64) {
+        MBST::run(self)
     }
 
     pub fn nodes(&self) -> &Vec<Rc<Node>> {
@@ -54,8 +61,61 @@ impl ImmutableGraph {
         // clones only the pointers to the nodes
         ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
     }
+    pub fn get_edges_weight_bigger_than(&self, weight: f64) -> ImmutableGraph {
+        let mut res_edges = Vec::new();
+        self.edges.iter().for_each(|edge| {
+            if edge.get_weight() > weight {
+                res_edges.push(Rc::clone(edge));
+            }
+        });
+        // clones only the pointers to the nodes
+        ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
+    }
     pub fn is_spanning_tree(&self) -> bool {
-        self.edges.len() == self.nodes.len() - 1
+        println!("Checking if graph is spanning tree");
+        print_edges!(&self.edges);
+        if self.edges.len() != self.nodes.len() - 1 {
+            return false;
+        }
+        //check if all nodes are visited
+        let mut visited_nodes = vec![false; self.nodes.len()];
+        let mut stack = Vec::new();
+        stack.push(0);
+        while !stack.is_empty() {
+            let node = stack.pop().unwrap();
+            visited_nodes[node] = true;
+            let edges = self.get_edges_by_node(node);
+            println!("adjacent edges of node {}", node);
+            print_edges!(edges);
+            println!("----------------");
+            for edge in edges {
+                let (node1, node2) = edge.endpoints();
+                if !visited_nodes[node1] {
+                    stack.push(node1);
+                }
+                if !visited_nodes[node2] {
+                    stack.push(node2);
+                }
+            }
+        }
+        //print visited nodes
+        for (i, visited) in visited_nodes.iter().enumerate() {
+            if !visited {
+                println!("Node {} not visited", i);
+                return false;
+            }
+        }
+        true
+    }
+    fn get_edges_by_node(&self, node_id: usize) -> Vec<Rc<Edge>> {
+        let mut res = Vec::new();
+        for edge in &self.edges {
+            let (v, w) = edge.endpoints();
+            if v == node_id|| w == node_id {
+                res.push(Rc::clone(edge));
+            }
+        }
+        res
     }
     pub fn calculate_total_weight(&self) -> f64 {
         self.edges.iter().fold(0.0, |acc, edge| acc + edge.get_weight())

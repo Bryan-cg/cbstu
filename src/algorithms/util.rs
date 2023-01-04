@@ -1,7 +1,17 @@
 use std::rc::Rc;
-use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
+use array_tool::vec::{Union, Uniq};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+
+///macro to print edges of Vec<Rc<Edge>>
+#[macro_export]
+macro_rules! print_edges {
+    ($edges:expr) => {
+        $edges.iter().for_each(|edge| {
+            println!("{} - {}, {}", edge.endpoints().0, edge.endpoints().1, edge.get_weight());
+        });
+    };
+}
 
 pub enum PivotResult {
     Feasible((ImmutableGraph, f64, f64)),
@@ -32,5 +42,50 @@ impl Util {
             bottleneck = edge.get_weight();
         }
         bottleneck
+    }
+
+    ///Return disjoint list of edges that are in edges1 but not in edges2
+    pub fn disjoint_edges(edges1: &Vec<Rc<Edge>>, edges2: Vec<Rc<Edge>>) -> Vec<Rc<Edge>> {
+        edges1.uniq(edges2)
+    }
+
+    ///union of 2 list of edges without duplicates
+    pub fn union_edges(edges1: &Vec<Rc<Edge>>, edges2: Vec<Rc<Edge>>) -> Vec<Rc<Edge>> {
+        edges1.union(edges2)
+    }
+
+    ///Return list of edges that are vector edges with weight bigger then lower-bound
+    /// and smaller then or equal to upperbound
+    pub fn edges_between(edges: &[Rc<Edge>], lower_bound: f64, upper_bound: f64) -> Vec<Rc<Edge>> {
+        let mut edges_between = Vec::new();
+        edges.iter().for_each(|edge| {
+            if edge.get_weight() >= lower_bound && edge.get_weight() <= upper_bound {
+                edges_between.push(Rc::clone(edge));
+            }
+        });
+        edges_between
+    }
+
+    pub fn unique_weight_list(edges: &[Rc<Edge>]) -> Vec<f64> {
+        let mut weights = Vec::new();
+        edges.iter().for_each(|edge| {
+            weights.push(edge.get_weight());
+        });
+        weights.unique()
+    }
+
+    //sort list of weights and return median
+    pub fn median(uniq_weights: &mut Vec<f64>) -> f64 {
+        uniq_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        let middle = uniq_weights.len() / 2;
+        if uniq_weights.len() % 2 == 0 {
+            if uniq_weights[middle] < uniq_weights[middle - 1] {
+                uniq_weights[middle]
+            } else {
+                uniq_weights[middle - 1]
+            }
+        } else {
+            uniq_weights[middle]
+        }
     }
 }
