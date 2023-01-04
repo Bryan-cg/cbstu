@@ -64,4 +64,26 @@ mod tests {
         assert_eq!(bottleneck_2, -9.0);
         assert_eq!(bottleneck_3, -9.0);
     }
+
+    #[test]
+    fn random_test_equal_results() {
+        let graph = InputHandler::read("data/germany50--D-B-L-N-C-A-N-N_network50_88.json");
+        let neg_graph = graph.negative_weights();
+        let (_, _, bottleneck) = Berman::run(&neg_graph, 150.0);
+        let (_, _, bottleneck2) = Punnen::run(&neg_graph, 150.0);
+        let (_, _, bottleneck3) = EdgeElimination::run(&neg_graph, 150.0);
+        assert_eq!(bottleneck, bottleneck2);
+        assert_eq!(bottleneck, bottleneck3);
+    }
+
+    #[test]
+    fn random_test_equal_results2() {
+        let graph = InputHandler::read("data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
+        let neg_graph = graph.negative_weights();
+        let (_, _, bottleneck) = Berman::run(&neg_graph, 200.0);
+        let (_, _, bottleneck2) = Punnen::run(&neg_graph, 200.0);
+        let (_, _, bottleneck3) = EdgeElimination::run(&neg_graph, 200.0);
+        assert_eq!(bottleneck, bottleneck2);
+        assert_eq!(bottleneck, bottleneck3);
+    }
 }
