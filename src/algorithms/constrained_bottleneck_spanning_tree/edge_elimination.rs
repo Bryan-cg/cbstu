@@ -20,7 +20,6 @@ impl EdgeElimination {
         }
         info!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
         let mut remaining_graph = Self::eliminate_upgraded_edges_above_bottleneck(original_graph, bottleneck_mbst);//todo change to graph
-        println!("Remaining edges length: {}", remaining_graph.edges().len());
         let (op_min_cost_st, _, bottleneck_min_cost) = remaining_graph.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() {
             warn!("No valid solution found");
@@ -107,7 +106,6 @@ impl EdgeElimination {
             let (u, v) = e.endpoints();
             let unupgraded_edge = Edge::new(u,v).weight(e.get_weight());
             remaining.push(Rc::new(unupgraded_edge));
-            //todo: is this right?
             if e.get_weight() > bottleneck {
                 let upgraded_edge = Edge::new(u,v)
                     .weight(e.get_upgraded_weight())

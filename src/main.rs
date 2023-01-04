@@ -16,6 +16,6 @@ fn main() {
     info!("Starting program");
     let graph = InputHandler::read("data/wrp4-11_network123_233.json");
     let neg_graph = graph.negative_weights();
-    let (_, _, bottleneck_small_budget_punnen) = EdgeElimination::run(&neg_graph, 100.0);
+    let (_, _, bottleneck_small_budget_punnen) = EdgeElimination::run(&neg_graph, 1000.0);
     info!("Bottleneck small budget: {}", bottleneck_small_budget_punnen);
 }
