@@ -29,7 +29,7 @@ impl MBST {
             return graph.edges_copy();
         }
         let mut res = Vec::with_capacity(graph.nodes().len() - 1); // the spanning tree has n-1 edges
-        let median = QuickSelect::find_median(graph.edges_mut());
+        let median = QuickSelect::find_median_edges(graph.edges_mut());
         let mut big_half = Vec::new();
         let mut small_half = Vec::new();
         let mut uf = UF::new(graph.nodes().len() as i32);

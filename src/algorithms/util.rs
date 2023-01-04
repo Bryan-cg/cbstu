@@ -54,27 +54,18 @@ impl Util {
         edges1.union(edges2)
     }
 
-    ///Return list of edges that are vector edges with weight bigger then lower-bound
-    /// and smaller then or equal to upperbound
-    pub fn edges_between(edges: &[Rc<Edge>], lower_bound: f64, upper_bound: f64) -> Vec<Rc<Edge>> {
-        let mut edges_between = Vec::new();
-        edges.iter().for_each(|edge| {
-            if edge.get_weight() >= lower_bound && edge.get_weight() <= upper_bound {
-                edges_between.push(Rc::clone(edge));
-            }
-        });
-        edges_between
-    }
-
-    pub fn unique_weight_list(edges: &[Rc<Edge>]) -> Vec<f64> {
+    ///Return list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
+    pub fn unique_weight_list(edges: &[Rc<Edge>], lower_bound: f64, upper_bound: f64) -> Vec<f64> {
         let mut weights = Vec::new();
         edges.iter().for_each(|edge| {
-            weights.push(edge.get_weight());
+            if edge.get_weight() > lower_bound && edge.get_weight() <= upper_bound {
+                weights.push(edge.get_weight());
+            }
         });
         weights.unique()
     }
 
-    //sort list of weights and return median
+    //sort list of weights and return median, use quick_select for faster performance
     pub fn median(uniq_weights: &mut Vec<f64>) -> f64 {
         uniq_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let middle = uniq_weights.len() / 2;
