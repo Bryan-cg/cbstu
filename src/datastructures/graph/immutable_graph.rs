@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use log::{trace, warn};
 use crate::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
 use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, Kruskal};
 use crate::datastructures::graph::edge::Edge;
@@ -71,13 +72,12 @@ impl ImmutableGraph {
         // clones only the pointers to the nodes
         ImmutableGraph { nodes: self.nodes.clone(), edges: res_edges }
     }
+    ///Slow check if the graph is a spanning tree and fully connected, only use for debugging
     pub fn is_spanning_tree(&self) -> bool {
-        println!("Checking if graph is spanning tree");
-        print_edges!(&self.edges);
         if self.edges.len() != self.nodes.len() - 1 {
             return false;
         }
-        //check if all nodes are visited
+        //check if all nodes are visited [DFS]
         let mut visited_nodes = vec![false; self.nodes.len()];
         let mut stack = Vec::new();
         stack.push(0);
@@ -85,9 +85,6 @@ impl ImmutableGraph {
             let node = stack.pop().unwrap();
             visited_nodes[node] = true;
             let edges = self.get_edges_by_node(node);
-            println!("adjacent edges of node {}", node);
-            print_edges!(edges);
-            println!("----------------");
             for edge in edges {
                 let (node1, node2) = edge.endpoints();
                 if !visited_nodes[node1] {
@@ -98,10 +95,9 @@ impl ImmutableGraph {
                 }
             }
         }
-        //print visited nodes
         for (i, visited) in visited_nodes.iter().enumerate() {
             if !visited {
-                println!("Node {} not visited", i);
+                warn!("Node {} not visited in ST", i);
                 return false;
             }
         }

@@ -14,13 +14,11 @@ pub struct MBST();
 impl MBST {
     /// Returns the minimum bottleneck spanning tree and the bottleneck of the given graph using the algorithm of Camerini et al (linear time).
     pub fn run(graph: &mut ImmutableGraph) -> (Option<ImmutableGraph>, f64) {
-        info!("Calculating MBST...");
+        info!("Calculating MBST [Camerini et al.]");
         let st_edges = Self::recursive_search(graph);
         let (corrected_st_edges, bottleneck) = Self::correct_st_edges(&st_edges);
         let st = ImmutableGraph::new(graph.nodes_copy(), corrected_st_edges);
         debug_assert!(st.is_spanning_tree());
-        debug!("MBST cost: {}", st.calculate_total_cost());
-        debug!("MBST bottleneck: {}", bottleneck);
         (Some(st), bottleneck)
     }
 
