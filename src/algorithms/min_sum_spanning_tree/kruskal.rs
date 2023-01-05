@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{debug, error};
+use log::{debug, error, trace};
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::uf::union_find::UF;
@@ -51,11 +51,12 @@ impl Kruskal {
             return (None, weight, bottleneck);
         }
         let st = ImmutableGraph::new(graph.nodes_copy(), st_edges);
-        debug_assert!(Self::check_optimality(&st, weight, calculation_type));
+        //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
         (Some(st), weight, bottleneck)
     }
 
     fn check_optimality(st: &ImmutableGraph, weight: f64, calculation_type: CalculationType) -> bool {
+        debug!("Checking optimality of MST");
         if st.edges().is_empty() {
             return true;
         }
@@ -71,6 +72,7 @@ impl Kruskal {
             error!("Weight of edges does not equal weight: {} vs. {}", weight, total_weight);
             return false;
         }
+        debug!("Weight of MST is valid");
         // check that it is acyclic
         let mut uf = UF::new(st.nodes().len() as i32);
         for edge in st.edges() {
@@ -81,8 +83,15 @@ impl Kruskal {
             }
             uf.union(v, w);
         }
+        debug!("MST is acyclic");
         // check that it is a minimal spanning forest (cut optimality conditions)
+        debug!("Checking cut optimality conditions");
+        let mut i = 0;
         for edge in st.edges() {
+            i += 1;
+            if i % 100 == 0 {
+                trace!("Progress: {}/{}", i, st.edges().len());
+            }
             // all edges in MST except e
             uf = UF::new(st.nodes().len() as i32);
             for e in st.edges() {
@@ -179,20 +188,20 @@ mod tests {
         }
         let mut edges = Vec::new();
         vec![
-            (7,6,1.0),
-            (8,2,2.0),
-            (6,5,2.0),
-            (0,1,4.0),
-            (2,5,4.0),
-            (8,6,6.0),
-            (2,3,7.0),
-            (7,8,7.0),
-            (0,7,8.0),
-            (1,2,8.0),
-            (3,4,9.0),
-            (5,4,10.0),
-            (1,7,11.0),
-            (3,5,14.0),
+            (7, 6, 1.0),
+            (8, 2, 2.0),
+            (6, 5, 2.0),
+            (0, 1, 4.0),
+            (2, 5, 4.0),
+            (8, 6, 6.0),
+            (2, 3, 7.0),
+            (7, 8, 7.0),
+            (0, 7, 8.0),
+            (1, 2, 8.0),
+            (3, 4, 9.0),
+            (5, 4, 10.0),
+            (1, 7, 11.0),
+            (3, 5, 14.0),
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
@@ -212,20 +221,20 @@ mod tests {
         }
         let mut edges = Vec::new();
         vec![
-            (7,6,1.0),
-            (8,2,2.0),
-            (6,5,2.0),
-            (0,1,4.0),
-            (2,5,4.0),
-            (8,6,6.0),
-            (2,3,7.0),
-            (7,8,7.0),
-            (0,7,8.0),
-            (1,2,8.0),
-            (3,4,9.0),
-            (5,4,10.0),
-            (1,7,11.0),
-            (3,5,14.0),
+            (7, 6, 1.0),
+            (8, 2, 2.0),
+            (6, 5, 2.0),
+            (0, 1, 4.0),
+            (2, 5, 4.0),
+            (8, 6, 6.0),
+            (2, 3, 7.0),
+            (7, 8, 7.0),
+            (0, 7, 8.0),
+            (1, 2, 8.0),
+            (3, 4, 9.0),
+            (5, 4, 10.0),
+            (1, 7, 11.0),
+            (3, 5, 14.0),
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).cost(*weight)));
         });

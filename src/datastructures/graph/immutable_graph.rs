@@ -73,6 +73,7 @@ impl ImmutableGraph {
     }
     ///Slow check if the graph is a spanning tree and fully connected, only use for debugging
     pub fn is_spanning_tree(&self) -> bool {
+        trace!("Checking if graph is a spanning tree");
         if self.edges.len() != self.nodes.len() - 1 {
             return false;
         }
@@ -80,7 +81,13 @@ impl ImmutableGraph {
         let mut visited_nodes = vec![false; self.nodes.len()];
         let mut stack = Vec::new();
         stack.push(0);
+        let max_iterations = self.nodes.len();
+        let mut iterations = 0;
         while !stack.is_empty() {
+            iterations += 1;
+            if iterations % 5000 == 0 {
+                trace!("DFS progress: {}/{}", iterations, max_iterations);
+            }
             let node = stack.pop().unwrap();
             visited_nodes[node] = true;
             let edges = self.get_edges_by_node(node);
@@ -100,13 +107,14 @@ impl ImmutableGraph {
                 return false;
             }
         }
+        trace!("Graph is a spanning tree");
         true
     }
     fn get_edges_by_node(&self, node_id: usize) -> Vec<Rc<Edge>> {
         let mut res = Vec::new();
         for edge in &self.edges {
             let (v, w) = edge.endpoints();
-            if v == node_id|| w == node_id {
+            if v == node_id || w == node_id {
                 res.push(Rc::clone(edge));
             }
         }

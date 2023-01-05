@@ -9,7 +9,6 @@ use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::graph::node::Node;
 use crate::datastructures::uf::union_find::UF;
-use crate::datastructures::uf::union_find_path_cmp::DisjointSet;
 
 pub struct MBST();
 

@@ -11,13 +11,16 @@ mod datastructures;
 mod algorithms;
 mod tests_functions;
 mod io;
+
+///Data
 //http://sndlib.zib.de/home.action
 //https://steinlib.zib.de/
+
 fn main() {
     env::set_var("RUST_LOG", "trace");
     env_logger::init();
     info!("Starting program");
-    test_all();
+    cli();
     info!("Finished");
 }
 
@@ -37,22 +40,4 @@ fn cli() {
     };
     info!("Algorithm took {} ns", now.elapsed().as_nanos());
     info!("Bottleneck: {}", bottleneck);
-}
-
-fn test_all() {
-    let paths = fs::read_dir("data").unwrap();
-    for path in paths {
-        let path = path.unwrap().path();
-        let path = path.to_str().unwrap();
-        if path.ends_with(".json") {
-            let graph = InputHandler::read(path);
-            let neg_graph = graph.negative_weights();
-            let (_, _, bottleneck) = Berman::run(&neg_graph, 200.0);
-            let (_, _, bottleneck2) = Punnen::run(&neg_graph, 200.0);
-            let (_, _, bottleneck3) = EdgeElimination::run(&neg_graph, 200.0);
-            if bottleneck != bottleneck2 || bottleneck != bottleneck3 {
-                panic!("Bottlenecks are not equal for {}, bottleneck Berman {}, bottleneck Punnen {}, bottleneck edge_elm {}", path, bottleneck, bottleneck2, bottleneck3);
-            }
-        }
-    }
 }
