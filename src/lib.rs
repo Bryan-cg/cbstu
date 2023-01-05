@@ -7,17 +7,17 @@ use crate::algorithms::constrained_bottleneck_spanning_tree::edge_elimination::E
 use crate::algorithms::constrained_bottleneck_spanning_tree::punnen::Punnen;
 use crate::io::input_handler::InputHandler;
 
-mod datastructures;
-mod algorithms;
-mod tests_functions;
-mod io;
+pub mod datastructures;
+pub mod algorithms;
+pub mod tests_functions;
+pub mod io;
 
 ///Data
 //http://sndlib.zib.de/home.action
 //https://steinlib.zib.de/
 
 fn main() {
-    env::set_var("RUST_LOG", "trace");
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
     info!("Starting program");
     cli();
@@ -31,6 +31,7 @@ fn cli() {
     let budget = args.get(3).expect("Third CLI argument needs to be budget").parse::<f64>().expect("Budget needs to be a number");
     let graph = InputHandler::read(input_file_path);
     let neg_graph = graph.negative_weights();
+    info!("Solving with algorithm {}", algorithm);
     let now = Instant::now();
     let (_, _, bottleneck) = match algorithm {
         "punnen" => Punnen::run(&neg_graph, budget),
@@ -38,6 +39,6 @@ fn cli() {
         "edge_elimination" => EdgeElimination::run(&neg_graph, budget),
         _ => panic!("Algorithm not supported"),
     };
-    info!("Algorithm took {} ns", now.elapsed().as_nanos());
+    info!("Algorithm took {} ms", (now.elapsed().as_nanos() as f64 / 1_000_000.0));
     info!("Bottleneck: {}", bottleneck);
 }

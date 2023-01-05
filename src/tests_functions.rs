@@ -7,7 +7,6 @@ mod tests {
     use crate::algorithms::constrained_bottleneck_spanning_tree::punnen::Punnen;
     use crate::io::input_handler::InputHandler;
 
-
     #[test]
     fn test_easy_instance() {
         let graph = InputHandler::read("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");

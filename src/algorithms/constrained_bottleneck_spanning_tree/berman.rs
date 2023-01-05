@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{debug, info};
+use log::{debug, trace};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::util::{PivotResult, Util};
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
@@ -8,14 +8,14 @@ pub struct Berman();
 
 impl Berman {
     pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
-        info!("Solving Constrained bottleneck spanning tree problem with Berman's algorithm");
+        trace!("Solving Constrained bottleneck spanning tree problem with Berman's algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
         graph.edges_mut().sort_by(|a, b| a.get_weight().partial_cmp(&b.get_weight()).unwrap());
         Self::dual_bound_search(&graph, budget)
     }
 
     fn dual_bound_search(graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
-        info!("Dual bound search");
+        trace!("Dual bound search");
         let mut max = graph.edges().len() - 1;
         let mut min = graph.nodes().len() - 1;
         let mut pivot_a;
@@ -55,7 +55,7 @@ impl Berman {
                 }
             }
         }
-        info!("Dual bound search finished [bottleneck: {}, cost: {}, iterations: {}]", bottleneck, cost, iterations);
+        trace!("Dual bound search finished [bottleneck: {}, cost: {}, iterations: {}]", bottleneck, cost, iterations);
         (final_st, cost, bottleneck)
     }
 

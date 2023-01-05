@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{debug, info, trace, warn};
+use log::{debug, trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::quick_select::QuickSelect;
 use crate::algorithms::util::Util;
@@ -11,38 +11,38 @@ pub struct Punnen();
 
 impl Punnen {
     pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
-        info!("Solving Constrained bottleneck spanning tree problem with Punnen's algorithm");
+        trace!("Solving Constrained bottleneck spanning tree problem with Punnen's algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
         let (op_bst, bottleneck_mbst) = graph.min_bot_st();
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
-            info!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
+            trace!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
             return (op_bst, total_cost, bottleneck_mbst)
         }
-        info!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
+        trace!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
         let (op_min_cost_st, cost, bottleneck_min_cost) = graph.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() || cost > budget {
-            info!("No valid solution found");
+            trace!("No valid solution found");
             return (None, 0.0, 0.0)
         }
         let lower_bound = bottleneck_mbst;
         let upper_bound = bottleneck_min_cost;
-        info!("Lower bound: {}, Upper bound: {}", lower_bound, upper_bound);
+        trace!("Lower bound: {}, Upper bound: {}", lower_bound, upper_bound);
         let mut graph_lower_bound = graph.get_edges_weight_lower_or_eq_than(lower_bound);
         //shadow variables
         let (op_min_cost_st, cost, bottleneck_min_cost) = graph_lower_bound.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() {
-            info!("No valid solution found");
+            trace!("No valid solution found");
             return (None, 0.0, 0.0)
         }
         if cost <= budget {
-            info!("MCST lower bound is valid solution [bottleneck: {}, cost: {}]", bottleneck_min_cost, cost);
+            trace!("MCST lower bound is valid solution [bottleneck: {}, cost: {}]", bottleneck_min_cost, cost);
             return (op_min_cost_st, cost, bottleneck_min_cost)
         }
-        info!("MCST lower bound is not valid solution [cost: {}]", cost);
+        trace!("MCST lower bound is not valid solution [cost: {}]", cost);
         let disjoint_graph = graph.get_edges_weight_bigger_than(lower_bound);
         let union_edges = Util::union_edges(disjoint_graph.edges(), op_min_cost_st.unwrap().edges_copy());
-        info!("Recursive search for valid solution");
+        trace!("Recursive search for valid solution");
         Self::recursive_find(&graph, budget, lower_bound, upper_bound, union_edges)
     }
 

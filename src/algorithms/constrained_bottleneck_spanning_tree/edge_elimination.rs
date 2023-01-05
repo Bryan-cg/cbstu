@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{info, trace, warn};
+use log::{trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::util::{PivotResult, Util};
 use crate::datastructures::graph::edge::Edge;
@@ -10,16 +10,18 @@ pub struct EdgeElimination();
 
 impl EdgeElimination {
     pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
-        info!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
+        trace!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
         //let mut graph_fully_upgraded = Util::duplicate_only_upgraded(original_graph);
-        let (op_bst, bottleneck_mbst) = graph.min_bot_st();
+        // let (op_bst, bottleneck_mbst) = graph.min_bot_st();
+        // let total_cost = graph.calculate_total_cost();
+        let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
-            info!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
+            trace!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
             return (op_bst, total_cost, bottleneck_mbst);
         }
-        info!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
+        trace!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
         let mut remaining_graph = Self::eliminate_upgraded_edges_above_bottleneck(original_graph, bottleneck_mbst);//todo change to graph
         let (op_min_cost_st, _, bottleneck_min_cost) = remaining_graph.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() {
@@ -32,7 +34,7 @@ impl EdgeElimination {
     }
 
     fn dual_bound_search(graph: &ImmutableGraph, mut remaining: Vec<Rc<Edge>>, relevant_edges: Vec<Rc<Edge>>, mut min_weight: f64, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
-        info!("Dual bound search");
+        trace!("Dual bound search");
         let mut max = relevant_edges.len() - 1;
         let mut min = 0_usize;
         let mut pivot_a;
@@ -82,7 +84,7 @@ impl EdgeElimination {
         }
         match final_st {
             Some(st) => {
-                info!("Dual bound search finished [bottleneck {}, cost {}, iterations {}]", st.2, st.1, iterations);
+                trace!("Dual bound search finished [bottleneck {}, cost {}, iterations {}]", st.2, st.1, iterations);
                 (Some(st.0), st.1, st.2)
             },
             None => {
