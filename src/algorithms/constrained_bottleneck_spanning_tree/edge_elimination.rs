@@ -13,10 +13,10 @@ impl EdgeElimination {
         trace!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
         //let mut graph_fully_upgraded = Util::duplicate_only_upgraded(original_graph);
-        // let (op_bst, bottleneck_mbst) = graph.min_bot_st();
-        // let total_cost = graph.calculate_total_cost();
-        let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
+        let (op_bst, bottleneck_mbst) = graph.min_bot_st();
         let total_cost = graph.calculate_total_cost();
+        // let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
+        // let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
             trace!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
             return (op_bst, total_cost, bottleneck_mbst);
