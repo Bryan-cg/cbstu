@@ -12,6 +12,7 @@ impl EdgeElimination {
     pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
         info!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
         let mut graph = Util::duplicate_edges(original_graph);
+        //let mut graph_fully_upgraded = Util::duplicate_only_upgraded(original_graph);
         let (op_bst, bottleneck_mbst) = graph.min_bot_st();
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
@@ -39,19 +40,22 @@ impl EdgeElimination {
         let mut pivot_a_weight;
         let mut pivot_b_weight;
         let mut final_st = None;
+        let mut iterations = 0;
         while min < max {
+            trace!("Min: {}, Max: {}", min, max);
+            iterations += 1;
             pivot_a = (max + min) / 2;
             pivot_b = max - 1;
             pivot_a_weight = relevant_edges[pivot_a].get_weight();
             pivot_b_weight = relevant_edges[pivot_b].get_weight();
-            if pivot_a_weight > min_weight {
-                min = pivot_a + 1;
-                continue;
-            }
+            // if pivot_a_weight > min_weight { //todo:check bug
+            //     min = pivot_a + 1;
+            //     continue;
+            // }
             let checked_a = Self::check_pivot(graph, remaining.clone(), pivot_a_weight, budget);
             match checked_a {
                 PivotResult::Feasible(st) => {
-                    trace!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
+                    trace!("Found feasible solution pivot_a [bottleneck {}, cost {}]", st.2, st.1);
                     min_weight = st.2;
                     final_st = Some(st);
                     remaining.retain(|e| e.get_weight() <= min_weight);
@@ -61,7 +65,7 @@ impl EdgeElimination {
                     let checked_b = Self::check_pivot(graph, remaining.clone(), pivot_b_weight, budget);
                     match checked_b {
                         PivotResult::Feasible(st) => {
-                            trace!("Found feasible solution [bottleneck {}, cost {}]", st.2, st.1);
+                            trace!("Found feasible solution pivot_b [bottleneck {}, cost {}]", st.2, st.1);
                             min_weight = st.2;
                             final_st = Some(st);
                             remaining.retain(|e| e.get_weight() <= min_weight);
@@ -77,7 +81,10 @@ impl EdgeElimination {
             }
         }
         match final_st {
-            Some(st) => (Some(st.0), st.1, st.2),
+            Some(st) => {
+                info!("Dual bound search finished [bottleneck {}, cost {}, iterations {}]", st.2, st.1, iterations);
+                (Some(st.0), st.1, st.2)
+            },
             None => {
                 warn!("No feasible solution found");
                 (None, 0.0, 0.0)

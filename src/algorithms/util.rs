@@ -32,6 +32,15 @@ impl Util {
         ImmutableGraph::new(graph.nodes_copy(), edges)
     }
 
+    pub fn duplicate_only_upgraded(graph: &ImmutableGraph) -> ImmutableGraph {
+        let mut edges = Vec::new();
+        for edge in graph.edges() {
+            let (u, v) = edge.endpoints();
+            edges.push(Rc::new(Edge::new(u, v).weight(edge.get_upgraded_weight()).cost(edge.get_cost()).upgraded(true)));
+        }
+        ImmutableGraph::new(graph.nodes_copy(), edges)
+    }
+
     pub fn update_bottleneck(bottleneck: f64, edge: &Rc<Edge>, inverse: bool) -> f64 {
         let mut bottleneck = bottleneck;
         if inverse {
@@ -54,18 +63,19 @@ impl Util {
         edges1.union(edges2)
     }
 
-    ///Return list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
+    ///Return unique list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
     pub fn unique_weight_list(edges: &[Rc<Edge>], lower_bound: f64, upper_bound: f64) -> Vec<f64> {
         let mut weights = Vec::new();
         edges.iter().for_each(|edge| {
             if edge.get_weight() > lower_bound && edge.get_weight() <= upper_bound {
                 weights.push(edge.get_weight());
+                //weights.contains(&edge.get_weight());
             }
         });
         weights.unique()
     }
 
-    //sort list of weights and return median, use quick_select for faster performance
+    //sort list of weights and return median (O(n log n)), use quick_select for faster performance
     pub fn median(uniq_weights: &mut Vec<f64>) -> f64 {
         uniq_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let middle = uniq_weights.len() / 2;

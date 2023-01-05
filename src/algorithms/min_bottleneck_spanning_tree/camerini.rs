@@ -2,12 +2,14 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::rc::Rc;
 use log::{debug, info};
+use union_find::{QuickFindUf, Union, UnionBySize, UnionFind};
 use crate::algorithms::quick_select::QuickSelect;
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::graph::node::Node;
 use crate::datastructures::uf::union_find::UF;
+use crate::datastructures::uf::union_find_path_cmp::DisjointSet;
 
 pub struct MBST();
 
@@ -50,37 +52,38 @@ impl MBST {
             let mut small_half_graph = ImmutableGraph::new(graph.nodes_copy(), small_half);
             return Self::recursive_search(&mut small_half_graph);
         }
-        let mut super_graph = Self::build_super_graph(&big_half, &mut uf);
+        let mut super_graph = Self::build_super_graph(&big_half, &mut uf, graph.nodes().len());
         res.append(&mut Self::recursive_search(&mut super_graph));
         res
     }
 
-    fn build_super_graph(big_half: &Vec<Rc<Edge>>, uf: &mut UF) -> ImmutableGraph {
+    //change edges to have parameter tmp endpoints and use these endpoints, to avoid creating new RCs and edges
+    fn build_super_graph(big_half: &Vec<Rc<Edge>>, uf: &mut UF, node_count: usize) -> ImmutableGraph {
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
-        let mut map: HashMap<usize, usize> = HashMap::new();
+        let mut keys = vec![(false, 0); node_count];
         let mut ids = 0;
         for edge in big_half {
             let (u, v) = edge.endpoints();
             let u_parent = uf.find(u);
             let v_parent = uf.find(v);
-            if let std::collections::hash_map::Entry::Vacant(e) = map.entry(u_parent) {
-                e.insert(ids);
+            if !keys[u_parent as usize].0 {
+                keys[u_parent as usize] = (true, ids);
                 nodes.push(Rc::new(Node::default(ids)));
                 ids += 1;
             }
-            if let std::collections::hash_map::Entry::Vacant(e) = map.entry(v_parent) {
-                e.insert(ids);
+            if !keys[v_parent as usize].0 {
+                keys[v_parent as usize] = (true, ids);
                 nodes.push(Rc::new(Node::default(ids)));
                 ids += 1;
             }
             let (orig_u, orig_v) = edge.original_endpoints();
-            let super_edge = Edge::new(map[&u_parent], map[&v_parent])
+            let super_edge = Edge::new(keys[u_parent as usize].1, keys[v_parent as usize].1)
                 .weight(edge.get_weight())
                 .set_original_endpoints(orig_u, orig_v);
             edges.push(Rc::new(super_edge));
         }
-        ImmutableGraph::new(nodes, edges)
+        ImmutableGraph::new(Rc::new(nodes), edges)
     }
 
     fn correct_st_edges(st_edges: &[Rc<Edge>]) -> (Vec<Rc<Edge>>, f64) {
@@ -166,7 +169,7 @@ mod tests {
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
-        let mut graph = ImmutableGraph::new(nodes, edges);
+        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let (_, _, bottleneck_kruskal) = graph.min_sum_st(CalculationType::Weight);
         let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
         assert!(st_cam.is_some());
@@ -213,7 +216,7 @@ mod tests {
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
-        let mut graph = ImmutableGraph::new(nodes, edges);
+        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let (_, _, bottleneck_kruskal) = graph.min_sum_st(CalculationType::Weight);
         let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
         assert!(st_cam.is_some());

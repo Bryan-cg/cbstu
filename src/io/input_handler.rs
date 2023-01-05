@@ -35,6 +35,6 @@ impl InputHandler {
             edges.push(Rc::new(edge));
         }
         info!("Read {} nodes and {} edges", nodes.len(), edges.len());
-        ImmutableGraph::new(nodes, edges)
+        ImmutableGraph::new(Rc::new(nodes), edges)
     }
 }

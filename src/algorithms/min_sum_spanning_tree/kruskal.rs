@@ -163,7 +163,7 @@ mod tests {
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
-        let mut graph = ImmutableGraph::new(nodes, edges);
+        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Weight);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
@@ -196,7 +196,7 @@ mod tests {
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
         });
-        let mut graph = ImmutableGraph::new(nodes, edges);
+        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Weight);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
@@ -229,7 +229,7 @@ mod tests {
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).cost(*weight)));
         });
-        let mut graph = ImmutableGraph::new(nodes, edges);
+        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Cost);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());

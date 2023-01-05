@@ -7,8 +7,8 @@ pub struct UF {
 impl UF {
     pub fn new(n: i32) -> UF {
         if n < 0 { panic!("Number of nodes must be non-negative"); }
-        let mut id = Vec::new();
-        let mut size = Vec::new();
+        let mut id = Vec::with_capacity(n as usize);
+        let mut size = Vec::with_capacity(n as usize);
         for i in 0..n {
             id.push(i as usize);
             size.push(1);
@@ -19,14 +19,29 @@ impl UF {
             count: n,
         }
     }
+    //find with path compression
     pub fn find(&mut self, p: usize) -> usize {
-        let mut p = p;
-        while p != self.id[p] {
-            self.id[p] = self.id[self.id[p]];
-            p = self.id[p];
+        let mut root = p;
+        while root != self.id[root] {
+            root = self.id[root];
         }
-        p
+        //path compression
+        let mut i = p;
+        while i != root {
+            let new_i = self.id[i];
+            self.id[i] = root;
+            i = new_i;
+        }
+        root
     }
+    // pub fn find(&mut self, p: usize) -> usize {
+    //     let mut p = p;
+    //     while p != self.id[p] {
+    //         self.id[p] = self.id[self.id[p]];
+    //         p = self.id[p];
+    //     }
+    //     p
+    // }
     pub fn connected(&mut self, p: usize, q: usize) -> bool {
         self.find(p) == self.find(q)
     }

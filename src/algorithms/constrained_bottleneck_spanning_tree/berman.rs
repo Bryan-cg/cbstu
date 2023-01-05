@@ -18,14 +18,14 @@ impl Berman {
         info!("Dual bound search");
         let mut max = graph.edges().len() - 1;
         let mut min = graph.nodes().len() - 1;
-        info!("Max weight: {}", graph.edges()[max].get_weight());
-        info!("Min weight: {}", graph.edges()[min].get_weight());
         let mut pivot_a;
         let mut pivot_b;
         let mut final_st= None;
         let mut cost = 0.0;
         let mut bottleneck = 0.0;
+        let mut iterations = 0;
         while min < max {
+            iterations += 1;
             pivot_a = (max + min) / 2;
             pivot_b = max - 1;
             match Self::check_pivot(graph, budget, pivot_a) {
@@ -55,7 +55,7 @@ impl Berman {
                 }
             }
         }
-        info!("Dual bound search finished [bottleneck: {}, cost: {}]", bottleneck, cost);
+        info!("Dual bound search finished [bottleneck: {}, cost: {}, iterations: {}]", bottleneck, cost, iterations);
         (final_st, cost, bottleneck)
     }
 

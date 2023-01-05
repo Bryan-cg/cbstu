@@ -6,15 +6,14 @@ use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::node::Node;
 use crate::print_edges;
 
-/// Graph with immutable nodes and edges
-//todo: nodes: Rc<Vec<Rc<Node>>>
+/// Graph with immutable nodes and edges. The edges can get a different order in the vector.
 pub struct ImmutableGraph {
-    nodes: Vec<Rc<Node>>,
+    nodes: Rc<Vec<Rc<Node>>>,
     edges: Vec<Rc<Edge>>,
 }
 
 impl ImmutableGraph {
-    pub fn new(nodes: Vec<Rc<Node>>, edges: Vec<Rc<Edge>>) -> ImmutableGraph {
+    pub fn new(nodes: Rc<Vec<Rc<Node>>>, edges: Vec<Rc<Edge>>) -> ImmutableGraph {
         ImmutableGraph {
             nodes,
             edges,
@@ -45,8 +44,8 @@ impl ImmutableGraph {
         self.edges.clone()
     }
 
-    pub fn nodes_copy(&self) -> Vec<Rc<Node>> {
-        self.nodes.clone()
+    pub fn nodes_copy(&self) -> Rc<Vec<Rc<Node>>> {
+        Rc::clone(&self.nodes)
     }
 
     pub fn get_node(&self, id: usize) -> Option<&Rc<Node>> {
@@ -158,7 +157,7 @@ mod tests {
         edges.push(Rc::new(Edge::new(1, 2).weight(4.0)));
         edges.push(Rc::new(Edge::new(1, 3).weight(5.0)));
         edges.push(Rc::new(Edge::new(2, 3).weight(6.0)));
-        let graph = ImmutableGraph::new(nodes, edges);
+        let graph = ImmutableGraph::new(Rc::new(nodes), edges);
         let graph2 = graph.get_edges_weight_lower_or_eq_than(3.0);
         assert_eq!(graph2.edges().len(), 3);
         //check number of pointers in rc

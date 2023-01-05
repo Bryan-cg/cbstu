@@ -8,8 +8,8 @@ pub struct Edge {
     weight: f64,
     upgraded_weight: f64,
     cost: f64,
-    original_either: usize,
-    original_other: usize,
+    tmp_either: usize,
+    temp_other: usize,
     upgraded: bool,
 }
 
@@ -21,8 +21,8 @@ impl Edge {
             weight: 0.0,
             upgraded_weight: 0.0,
             cost: 0.0,
-            original_either: either,
-            original_other: other,
+            tmp_either: either,
+            temp_other: other,
             upgraded: false,
         }
     }
@@ -30,7 +30,7 @@ impl Edge {
         (self.either, self.other)
     }
     pub fn original_endpoints(&self) -> (usize, usize) {
-        (self.original_either, self.original_other)
+        (self.tmp_either, self.temp_other)
     }
     pub fn weight(mut self, weight: f64) -> Edge {
         self.weight = weight;
@@ -61,8 +61,8 @@ impl Edge {
         self.cost
     }
     pub fn set_original_endpoints(mut self, either: usize, other: usize) -> Edge {
-        self.original_either = either;
-        self.original_other = other;
+        self.tmp_either = either;
+        self.temp_other = other;
         self
     }
 }
@@ -102,14 +102,14 @@ fn builder_test() {
         weight: 10.0,
         upgraded_weight: 20.0,
         cost: 30.0,
-        original_either: 2,
-        original_other: 3,
+        tmp_either: 2,
+        temp_other: 3,
         upgraded: false,
     };
     let edge_from_builder: Edge = Edge::new(0,1)
         .weight(10.0)
         .upgraded_weight(20.0)
         .cost(30.0)
-        .set_original_endpoints(2,3);
+        .set_original_endpoints(2, 3);
     assert_eq!(edge, edge_from_builder);
 }

@@ -1,5 +1,6 @@
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use crate::algorithms::constrained_bottleneck_spanning_tree::berman::Berman;
     use crate::algorithms::constrained_bottleneck_spanning_tree::edge_elimination::EdgeElimination;
     use crate::algorithms::constrained_bottleneck_spanning_tree::punnen::Punnen;
@@ -17,10 +18,10 @@ mod tests {
         let (_, _, bottleneck_small_budget_edg) = EdgeElimination::run(&neg_graph, 100.0);
         assert_eq!(bottleneck_big_budget_berman, -26.0);
         assert_eq!(bottleneck_small_budget_berman, -14.0);
-        assert_eq!(bottleneck_big_budget_punnen, -26.0);
-        assert_eq!(bottleneck_small_budget_punnen, -14.0);
         assert_eq!(bottleneck_big_budget_edg, -26.0);
         assert_eq!(bottleneck_small_budget_edg, -14.0);
+        assert_eq!(bottleneck_big_budget_punnen, -26.0);
+        assert_eq!(bottleneck_small_budget_punnen, -14.0);
     }
 
     #[test]
@@ -86,4 +87,5 @@ mod tests {
         assert_eq!(bottleneck, bottleneck2);
         assert_eq!(bottleneck, bottleneck3);
     }
+
 }

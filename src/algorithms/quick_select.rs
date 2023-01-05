@@ -3,6 +3,7 @@ use crate::datastructures::graph::edge::Edge;
 
 pub struct QuickSelect();
 
+/// Returns median of the given vector in O(n) time.
 impl QuickSelect {
     pub fn find_median_edges(array: &mut [Rc<Edge>]) -> Rc<Edge> {
         let mut left = 0;
