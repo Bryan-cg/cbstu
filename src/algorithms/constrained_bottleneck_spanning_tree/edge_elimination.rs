@@ -1,39 +1,41 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use log::{trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
-use crate::algorithms::util::{PivotResult, Util};
+use crate::algorithms::util::{PivotResult, PivotResultMut, Util};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::print_edges;
 
 pub struct EdgeElimination();
 
 impl EdgeElimination {
-    pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+    pub fn run(original_graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
-        let mut graph = Util::duplicate_edges(original_graph);
+        let mut graph = Util::duplicate_edges_mut(original_graph);
         //let mut graph_fully_upgraded = Util::duplicate_only_upgraded(original_graph);
-        let (op_bst, bottleneck_mbst) = graph.min_bot_st();
-        let total_cost = graph.calculate_total_cost();
-        // let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
+        // let (op_bst, bottleneck_mbst) = graph.min_bot_st();
         // let total_cost = graph.calculate_total_cost();
+        let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
+        let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
             trace!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
             return (op_bst, total_cost, bottleneck_mbst);
         }
         trace!("MBST is not valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
-        let mut remaining_graph = Self::eliminate_upgraded_edges_above_bottleneck(original_graph, bottleneck_mbst);//todo change to graph
+        let mut remaining_graph = Self::eliminate_upgraded_edges_above_bottleneck_mut(original_graph, bottleneck_mbst);
         let (op_min_cost_st, _, bottleneck_min_cost) = remaining_graph.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() {
             warn!("No valid solution found");
             return (None, 0.0, 0.0);
         }
-        let mut relevant_edges = Self::edges_above_or_eq_bottleneck(&remaining_graph, bottleneck_mbst);
-        relevant_edges.sort_by(|a, b| a.get_weight().partial_cmp(&b.get_weight()).unwrap());
+        let mut relevant_edges = Self::edges_above_or_eq_bottleneck_mut(&remaining_graph, bottleneck_mbst);
+        relevant_edges.sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap());
         Self::dual_bound_search(&graph, remaining_graph.edges_copy(), relevant_edges, bottleneck_min_cost, budget)
     }
 
-    fn dual_bound_search(graph: &ImmutableGraph, mut remaining: Vec<Rc<Edge>>, relevant_edges: Vec<Rc<Edge>>, mut min_weight: f64, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+    fn dual_bound_search(graph: &MutableGraph, mut remaining: Vec<Rc<RefCell<Edge>>>, relevant_edges: Vec<Rc<RefCell<Edge>>>, mut min_weight: f64, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Dual bound search");
         let mut max = relevant_edges.len() - 1;
         let mut min = 0_usize;
@@ -48,33 +50,33 @@ impl EdgeElimination {
             iterations += 1;
             pivot_a = (max + min) / 2;
             pivot_b = max - 1;
-            pivot_a_weight = relevant_edges[pivot_a].get_weight();
-            pivot_b_weight = relevant_edges[pivot_b].get_weight();
+            pivot_a_weight = relevant_edges[pivot_a].borrow().get_weight();
+            pivot_b_weight = relevant_edges[pivot_b].borrow().get_weight();
             // if pivot_a_weight > min_weight { //todo:check bug
             //     min = pivot_a + 1;
             //     continue;
             // }
-            let checked_a = Self::check_pivot(graph, remaining.clone(), pivot_a_weight, budget);
+            let checked_a = Self::check_pivot_mut(graph, remaining.clone(), pivot_a_weight, budget);
             match checked_a {
-                PivotResult::Feasible(st) => {
+                PivotResultMut::Feasible(st) => {
                     trace!("Found feasible solution pivot_a [bottleneck {}, cost {}]", st.2, st.1);
                     min_weight = st.2;
                     final_st = Some(st);
-                    remaining.retain(|e| e.get_weight() <= min_weight);
+                    remaining.retain(|e| e.borrow().get_weight() <= min_weight);
                     max = pivot_a;
                 }
-                PivotResult::Infeasible => {
-                    let checked_b = Self::check_pivot(graph, remaining.clone(), pivot_b_weight, budget);
+                PivotResultMut::Infeasible => {
+                    let checked_b = Self::check_pivot_mut(graph, remaining.clone(), pivot_b_weight, budget);
                     match checked_b {
-                        PivotResult::Feasible(st) => {
+                        PivotResultMut::Feasible(st) => {
                             trace!("Found feasible solution pivot_b [bottleneck {}, cost {}]", st.2, st.1);
                             min_weight = st.2;
                             final_st = Some(st);
-                            remaining.retain(|e| e.get_weight() <= min_weight);
+                            remaining.retain(|e| e.borrow().get_weight() <= min_weight);
                             min = pivot_a + 1;
                             max = pivot_b;
                         }
-                        PivotResult::Infeasible => {
+                        PivotResultMut::Infeasible => {
                             trace!("Infeasible pivot_b");
                             min = pivot_b + 1;
                         }
@@ -109,6 +111,22 @@ impl EdgeElimination {
         }
     }
 
+    fn check_pivot_mut(graph: &MutableGraph, remaining: Vec<Rc<RefCell<Edge>>>, pivot_weight: f64, budget: f64) -> PivotResultMut {
+        let remaining_graph = MutableGraph::new(graph.nodes_copy(), remaining);
+        let mut graph_below_pivot = remaining_graph.get_edges_weight_lower_or_eq_than(pivot_weight);
+        let (op_mst, cost, bottleneck) = graph_below_pivot.min_sum_st(CalculationType::Cost);
+        match op_mst {
+            Some(st) => {
+                match cost {
+                    cost if cost <= budget => PivotResultMut::Feasible((st, cost, bottleneck)),
+                    _ => PivotResultMut::Infeasible
+                }
+            }
+            None => PivotResultMut::Infeasible
+        }
+    }
+
+
     fn eliminate_upgraded_edges_above_bottleneck(graph: &ImmutableGraph, bottleneck: f64) -> ImmutableGraph {
         let mut remaining = Vec::new();
         graph.edges().iter().for_each(|e| {
@@ -126,11 +144,37 @@ impl EdgeElimination {
         ImmutableGraph::new(graph.nodes_copy(), remaining)
     }
 
+    fn eliminate_upgraded_edges_above_bottleneck_mut(graph: &MutableGraph, bottleneck: f64) -> MutableGraph {
+        let mut remaining = Vec::new();
+        graph.edges().iter().for_each(|e| {
+            let (u, v) = e.borrow().endpoints();
+            let unupgraded_edge = RefCell::new(Edge::new(u,v).weight(e.borrow().get_weight()));
+            remaining.push(Rc::new(unupgraded_edge));
+            if e.borrow().get_weight() > bottleneck {
+                let upgraded_edge = Edge::new(u,v)
+                    .weight(e.borrow().get_upgraded_weight())
+                    .cost(e.borrow().get_cost())
+                    .upgraded(true);
+                remaining.push(Rc::new(RefCell::new(upgraded_edge)));
+            }
+        });
+        MutableGraph::new(graph.nodes_copy(), remaining)
+    }
+
     fn edges_above_or_eq_bottleneck(graph: &ImmutableGraph, bottleneck: f64) -> Vec<Rc<Edge>> {
         graph
             .edges()
             .iter()
             .filter(|e| e.get_weight() >= bottleneck)
+            .map(Rc::clone)
+            .collect()
+    }
+
+    fn edges_above_or_eq_bottleneck_mut(graph: &MutableGraph, bottleneck: f64) -> Vec<Rc<RefCell<Edge>>> {
+        graph
+            .edges()
+            .iter()
+            .filter(|e| e.borrow().get_weight() >= bottleneck)
             .map(Rc::clone)
             .collect()
     }

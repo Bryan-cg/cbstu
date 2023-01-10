@@ -2,7 +2,9 @@ use std::rc::Rc;
 use log::{debug, error, trace};
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::datastructures::uf::union_find::UF;
+use crate::print_edges;
 
 const FLOATING_POINT_EPSILON: f64 = 1.0E-12;
 
@@ -51,6 +53,46 @@ impl Kruskal {
             return (None, weight, bottleneck);
         }
         let st = ImmutableGraph::new(graph.nodes_copy(), st_edges);
+        //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
+        (Some(st), weight, bottleneck)
+    }
+
+    pub fn run_mutable(graph: &mut MutableGraph, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
+        let mut st_edges = Vec::new();
+        let mut weight = 0.0;
+        let inverse = matches!(graph.edges()[0].borrow().get_weight(), w if w < 0.0);
+        let mut bottleneck = match inverse {
+            true => f64::NEG_INFINITY,
+            false => f64::INFINITY,
+        };
+        match calculation_type {
+            CalculationType::Cost => graph.edges_mut().sort_by(|a, b| a.borrow().get_cost().partial_cmp(&b.borrow().get_cost()).unwrap()),
+            CalculationType::Weight => graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()),
+        }
+        let mut uf = UF::new(graph.nodes().len() as i32);
+        for edge in graph.edges() {
+            let (v, w) = edge.borrow().endpoints();
+            if !uf.connected(v, w) {
+                uf.union(v, w);
+                st_edges.push(Rc::clone(edge));
+                match calculation_type {
+                    CalculationType::Cost => {
+                        weight += edge.borrow().get_cost();
+                        bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+                    }
+                    CalculationType::Weight => {
+                        weight += edge.borrow().get_weight();
+                        bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+                    }
+                }
+            }
+        }
+        if uf.count() > 1 {
+            weight = f64::INFINITY;
+            bottleneck = f64::INFINITY;
+            return (None, weight, bottleneck);
+        }
+        let st = MutableGraph::new(graph.nodes_copy(), st_edges);
         //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
         (Some(st), weight, bottleneck)
     }
@@ -128,6 +170,7 @@ impl Kruskal {
 
 #[cfg(test)]
 mod tests {
+    use std::cell::RefCell;
     use super::*;
     use crate::datastructures::graph::immutable_graph::ImmutableGraph;
     use crate::datastructures::graph::edge::Edge;
@@ -187,6 +230,7 @@ mod tests {
             nodes.push(Rc::new(Node::default(i)));
         }
         let mut edges = Vec::new();
+        let mut edges_mut = Vec::new();
         vec![
             (7, 6, 1.0),
             (8, 2, 2.0),
@@ -204,13 +248,19 @@ mod tests {
             (3, 5, 14.0),
         ].iter().for_each(|(v, w, weight)| {
             edges.push(Rc::new(Edge::new(*v, *w).weight(*weight)));
+            edges_mut.push(Rc::new(RefCell::new(Edge::new(*v, *w).weight(*weight))))
         });
-        let mut graph = ImmutableGraph::new(Rc::new(nodes), edges);
+        let nodes_rc = Rc::new(nodes);
+        let mut graph = ImmutableGraph::new(Rc::clone(&nodes_rc), edges);
+        let mut graph_mut = MutableGraph::new(Rc::clone(&nodes_rc), edges_mut);
         let (st, weight, bottleneck) = Kruskal::run(&mut graph, CalculationType::Weight);
+        let (st_mut, weight_mut, bottleneck_mut) = Kruskal::run_mutable(&mut graph_mut, CalculationType::Weight);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
         assert_eq!(weight, 37.0);
         assert_eq!(bottleneck, 1.0);
+        assert_eq!(bottleneck_mut, 1.0);
+        assert_eq!(weight_mut, 37.0);
     }
 
     #[test]

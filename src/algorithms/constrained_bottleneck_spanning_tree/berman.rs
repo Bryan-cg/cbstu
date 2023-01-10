@@ -1,20 +1,21 @@
 use std::rc::Rc;
 use log::{debug, trace};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
-use crate::algorithms::util::{PivotResult, Util};
+use crate::algorithms::util::{PivotResult, PivotResultMut, Util};
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+use crate::datastructures::graph::mutable_graph::MutableGraph;
 
 pub struct Berman();
 
 impl Berman {
-    pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+    pub fn run(original_graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Solving Constrained bottleneck spanning tree problem with Berman's algorithm");
-        let mut graph = Util::duplicate_edges(original_graph);
-        graph.edges_mut().sort_by(|a, b| a.get_weight().partial_cmp(&b.get_weight()).unwrap());
+        let mut graph = Util::duplicate_edges_mut(original_graph);
+        graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap());
         Self::dual_bound_search(&graph, budget)
     }
 
-    fn dual_bound_search(graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+    fn dual_bound_search(graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Dual bound search");
         let mut max = graph.edges().len() - 1;
         let mut min = graph.nodes().len() - 1;
@@ -29,17 +30,17 @@ impl Berman {
             pivot_a = (max + min) / 2;
             pivot_b = max - 1;
             match Self::check_pivot(graph, budget, pivot_a) {
-                PivotResult::Feasible(st) => {
+                PivotResultMut::Feasible(st) => {
                     debug!("Feasible pivot_a [bottleneck: {}, cost: {}]", st.2, st.1);
                     final_st = Some(st.0);
                     cost = st.1;
                     bottleneck = st.2;
                     max = pivot_a;
                 }
-                PivotResult::Infeasible => {
+                PivotResultMut::Infeasible => {
                     debug!("Infeasible pivot_a");
                     match Self::check_pivot(graph, budget, pivot_b) {
-                        PivotResult::Feasible(st) => {
+                        PivotResultMut::Feasible(st) => {
                             debug!("Feasible pivot_b [bottleneck: {}, cost: {}]", st.2, st.1);
                             final_st = Some(st.0);
                             cost = st.1;
@@ -47,7 +48,7 @@ impl Berman {
                             min = pivot_a + 1;
                             max = pivot_b;
                         }
-                        PivotResult::Infeasible => {
+                        PivotResultMut::Infeasible => {
                             debug!("Infeasible pivot_b");
                             min = pivot_b + 1;
                         }
@@ -59,28 +60,28 @@ impl Berman {
         (final_st, cost, bottleneck)
     }
 
-    fn check_pivot(graph: &ImmutableGraph, budget: f64, pivot: usize) -> PivotResult {
+    fn check_pivot(graph: &MutableGraph, budget: f64, pivot: usize) -> PivotResultMut {
         let mut pivot_edges = Vec::with_capacity(graph.edges().len());
-        let pivot_weight = graph.edges()[pivot].get_weight();
+        let pivot_weight = graph.edges()[pivot].borrow().get_weight();
         debug!("Pivot weight: {}", pivot_weight);
         for edge in graph.edges() {
-            if edge.get_weight() <= pivot_weight {
+            if edge.borrow().get_weight() <= pivot_weight {
                 pivot_edges.push(Rc::clone(edge));
             }
         }
-        let mut pivot_graph = ImmutableGraph::new(graph.nodes_copy(), pivot_edges);
+        let mut pivot_graph = MutableGraph::new(graph.nodes_copy(), pivot_edges);
         debug!("Pivot graph edges: {}", pivot_graph.edges().len());
         let (op_st, cost, bottleneck) = pivot_graph.min_sum_st(CalculationType::Cost);
         match op_st {
             Some(st) => {
                 if cost <= budget {
-                    PivotResult::Feasible((st, cost, bottleneck))
+                    PivotResultMut::Feasible((st, cost, bottleneck))
                 } else {
                     debug!("Infeasible cost: {}", cost);
-                    PivotResult::Infeasible
+                    PivotResultMut::Infeasible
                 }
             }
-            None => PivotResult::Infeasible
+            None => PivotResultMut::Infeasible
         }
     }
 }

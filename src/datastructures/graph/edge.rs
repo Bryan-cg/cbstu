@@ -65,6 +65,22 @@ impl Edge {
         self.temp_other = other;
         self
     }
+    pub fn set_original_endpoints_self(&mut self, either: usize, other: usize) {
+        self.tmp_either = either;
+        self.temp_other = other;
+    }
+    pub fn set_weight_self(&mut self, weight: f64) {
+        self.weight = weight;
+    }
+    pub fn set_upgraded_weight_self(&mut self, upgraded_weight: f64) {
+        self.upgraded_weight = upgraded_weight;
+    }
+    pub fn set_upgraded_self(&mut self, upgraded: bool) {
+        self.upgraded = upgraded;
+    }
+    pub fn set_cost_self(&mut self, cost: f64) {
+        self.cost = cost;
+    }
 }
 
 impl PartialOrd for Edge {

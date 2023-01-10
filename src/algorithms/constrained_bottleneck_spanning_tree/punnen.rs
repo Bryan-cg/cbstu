@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::rc::Rc;
 use log::{debug, trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
@@ -5,14 +6,15 @@ use crate::algorithms::quick_select::QuickSelect;
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::print_edges;
 
 pub struct Punnen();
 
 impl Punnen {
-    pub fn run(original_graph: &ImmutableGraph, budget: f64) -> (Option<ImmutableGraph>, f64, f64) {
+    pub fn run(original_graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Solving Constrained bottleneck spanning tree problem with Punnen's algorithm");
-        let mut graph = Util::duplicate_edges(original_graph);
+        let mut graph = Util::duplicate_edges_mut(original_graph);
         let (op_bst, bottleneck_mbst) = graph.min_bot_st();
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
@@ -46,11 +48,11 @@ impl Punnen {
         Self::recursive_find(&graph, budget, lower_bound, upper_bound, union_edges)
     }
 
-    fn recursive_find(graph: &ImmutableGraph, budget: f64, mut lower_bound: f64, mut upper_bound: f64, union_edges: Vec<Rc<Edge>>) -> (Option<ImmutableGraph>, f64, f64) {
+    fn recursive_find(graph: &MutableGraph, budget: f64, mut lower_bound: f64, mut upper_bound: f64, union_edges: Vec<Rc<RefCell<Edge>>>) -> (Option<MutableGraph>, f64, f64) {
         trace!("Recursive find [lower bound: {}, upper bound: {}]", lower_bound, upper_bound);
         let mut l = Util::unique_weight_list(&union_edges, lower_bound, upper_bound);
         let median_unique = QuickSelect::find_median_f64(&mut l);
-        let graph_union = ImmutableGraph::new(graph.nodes_copy(), union_edges);
+        let graph_union = MutableGraph::new(graph.nodes_copy(), union_edges);
         let mut graph_below_w = graph_union.get_edges_weight_lower_or_eq_than(median_unique);
         let (op_min_cost_st, cost, bottleneck_min_cost) = graph_below_w.min_sum_st(CalculationType::Cost);
         if op_min_cost_st.is_none() {
