@@ -81,6 +81,11 @@ impl Edge {
     pub fn set_cost_self(&mut self, cost: f64) {
         self.cost = cost;
     }
+
+    pub fn inverse_weights(&mut self) {
+        self.weight = -self.weight;
+        self.upgraded_weight = -self.upgraded_weight;
+    }
 }
 
 impl PartialOrd for Edge {

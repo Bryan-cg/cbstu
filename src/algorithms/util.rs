@@ -10,7 +10,7 @@ use crate::datastructures::graph::mutable_graph::MutableGraph;
 macro_rules! print_edges {
     ($edges:expr) => {
         $edges.iter().for_each(|edge| {
-            println!("{} - {}, {}", edge.endpoints().0, edge.endpoints().1, edge.get_weight());
+            println!("{} - {}, {}", edge.borrow().endpoints().0, edge.borrow().endpoints().1, edge.borrow().get_weight());
         });
     };
 }
@@ -39,6 +39,8 @@ impl Util {
         }
         ImmutableGraph::new(graph.nodes_copy(), edges)
     }
+
+    #[inline]
     ///Creates a new graph with the same nodes, but each edge is duplicated with its original weight (cost 0) and upgraded weight (upgrade cost).
     pub fn duplicate_edges_mut(graph: &MutableGraph) -> MutableGraph {
         let mut edges = Vec::new();
@@ -112,6 +114,25 @@ impl Util {
         weights.unique()
     }
 
+    #[inline]
+    ///Return unique list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
+    pub fn unique_weight_list_above_or_eq(edges: &[Rc<RefCell<Edge>>], threshold: f64) -> Vec<f64> {
+        let mut weights = Vec::new();
+        edges.iter().for_each(|edge| {
+            if edge.borrow().get_weight() >= threshold {
+                weights.push(edge.borrow().get_weight());
+            }
+        });
+        weights.unique()
+    }
+
+    #[inline]
+    ///Return vector slice with weight bigger then lower-bound en smaller then or equal to upper bound
+    pub fn relevant_slice(weights: &[f64], lower_bound: f64, upper_bound: f64) -> Vec<f64> {
+        weights.iter().filter(|&&x| x > lower_bound && x <= upper_bound).cloned().collect()
+    }
+
+    #[inline]
     //sort list of weights and return median (O(n log n)), use quick_select for faster performance
     pub fn median(uniq_weights: &mut Vec<f64>) -> f64 {
         uniq_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());

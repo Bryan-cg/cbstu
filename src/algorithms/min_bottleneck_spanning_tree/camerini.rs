@@ -27,8 +27,9 @@ impl MBST {
     pub fn run_mutable(graph: &mut MutableGraph) -> (Option<MutableGraph>, f64) {
         trace!("Calculating MBST [Camerini et al.]");
         let st_edges = Self::recursive_search_mut(graph);
-        let (corrected_st_edges, bottleneck) = Self::find_bottleneck(&st_edges);
-        let st = MutableGraph::new(graph.nodes_copy(), corrected_st_edges);
+        let bottleneck = Self::find_bottleneck(&st_edges);
+        let st = MutableGraph::new(graph.nodes_copy(), st_edges);
+        debug_assert!(st.is_spanning_tree());
         (Some(st), bottleneck)
     }
 
@@ -174,8 +175,7 @@ impl MBST {
         (res, bottleneck)
     }
 
-    fn find_bottleneck(st_edges: &Vec<Rc<RefCell<Edge>>>) -> (Vec<Rc<RefCell<Edge>>>, f64) {
-        let mut res = Vec::new();
+    fn find_bottleneck(st_edges: &[Rc<RefCell<Edge>>]) -> f64 {
         let inverse = matches!(st_edges[0].borrow().get_weight(), w if w < 0.0);
         let mut bottleneck = match inverse {
             true => f64::NEG_INFINITY,
@@ -190,7 +190,7 @@ impl MBST {
                 bottleneck = edge.borrow().get_weight();
             }
         });
-        (res, bottleneck)
+        bottleneck
     }
 
     fn compare_edge(edge1: &Rc<Edge>, edge2: &Rc<Edge>) -> Ordering {

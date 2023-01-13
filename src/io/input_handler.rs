@@ -67,6 +67,8 @@ impl InputHandler {
             edges.push(Rc::new(RefCell::new(edge)));
         }
         info!("Read {} nodes and {} edges", nodes.len(), edges.len());
-        MutableGraph::new(Rc::new(nodes), edges)
+        let graph = MutableGraph::new(Rc::new(nodes), edges);
+        debug_assert!(graph.is_connected_graph());
+        graph
     }
 }

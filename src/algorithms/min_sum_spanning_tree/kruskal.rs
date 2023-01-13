@@ -94,6 +94,7 @@ impl Kruskal {
         }
         let st = MutableGraph::new(graph.nodes_copy(), st_edges);
         //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
+        debug_assert!(st.is_spanning_tree());
         (Some(st), weight, bottleneck)
     }
 
