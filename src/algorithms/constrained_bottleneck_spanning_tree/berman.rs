@@ -1,8 +1,7 @@
 use std::rc::Rc;
-use log::{debug, trace};
+use log::{debug, info, trace};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
-use crate::algorithms::util::{PivotResult, PivotResultMut, Util};
-use crate::datastructures::graph::immutable_graph::ImmutableGraph;
+use crate::algorithms::util::{PivotResultMut, Util};
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 
 pub struct Berman();
@@ -11,12 +10,32 @@ impl Berman {
     pub fn run(original_graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Solving Constrained bottleneck spanning tree problem with Berman's algorithm");
         let mut graph = Util::duplicate_edges_mut(original_graph);
-        //graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()); //todo use unstable sort
-        //graph.edges_mut().sort_unstable_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap());
-        // get list with unique weights
         let mut unique_weights = Util::unique_weight_list(graph.edges(), f64::NEG_INFINITY,  0.0);
         unique_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        //unique_weights.iter().for_each(|w| println!("Unique weight: {}", w));
         Self::dual_bound_search(&graph, &unique_weights, budget)
+        //Self::naive_search(&mut graph, &unique_weights, budget)
+    }
+
+    fn naive_search(graph: &mut MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64) {
+        trace!("Naive search");
+        let mut final_st = None;
+        for pivot_weight in unique_weights{
+            if let PivotResultMut::Feasible(st) = Util::check_pivot(graph, *pivot_weight, budget) {
+                final_st = Some(st);
+                break;
+            }
+        }
+        match final_st {
+            Some(st) => {
+                trace!("Naive search finished [bottleneck {}, cost {}]", st.2, st.1);
+                (Some(st.0), st.1, st.2)
+            }
+            None => {
+                info!("No valid solution found");
+                (None, 0.0, 0.0)
+            }
+        }
     }
 
     fn bisection_search(graph: &MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64) {
@@ -29,7 +48,7 @@ impl Berman {
         let mut bottleneck = 0.0;
         while min <= max {
             pivot = (max + min) / 2;
-            match Self::check_pivot(graph, budget, pivot, unique_weights) {
+            match Util::check_pivot(graph, unique_weights[pivot], budget) {
                 PivotResultMut::Feasible(st) => {
                     debug!("Feasible pivot [bottleneck: {}, cost: {}]", st.2, st.1);
                     max = pivot - 1;
@@ -48,12 +67,12 @@ impl Berman {
 
     fn dual_bound_search(graph: &MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Dual bound search");
-        //let mut max = graph.edges().len() - 1;
-        //let mut min = graph.nodes().len() - 1;
         let mut max = unique_weights.len();
         let mut min = 0;
         let mut pivot_a;
         let mut pivot_b;
+        let mut pivot_a_weight;
+        let mut pivot_b_weight;
         let mut final_st = None;
         let mut cost = 0.0;
         let mut bottleneck = 0.0;
@@ -62,7 +81,9 @@ impl Berman {
             iterations += 1;
             pivot_a = (max + min) / 2; //todo floor
             pivot_b = max - 1;
-            match Self::check_pivot(graph, budget, pivot_a, unique_weights) {
+            pivot_a_weight = unique_weights[pivot_a];
+            pivot_b_weight = unique_weights[pivot_b];
+            match Util::check_pivot(graph, pivot_a_weight, budget) {
                 PivotResultMut::Feasible(st) => {
                     debug!("Feasible pivot_a [bottleneck: {}, cost: {}]", st.2, st.1);
                     final_st = Some(st.0);
@@ -72,7 +93,7 @@ impl Berman {
                 }
                 PivotResultMut::Infeasible => {
                     debug!("Infeasible pivot_a");
-                    match Self::check_pivot(graph, budget, pivot_b, unique_weights) {
+                    match Util::check_pivot(graph, pivot_b_weight, budget) {
                         PivotResultMut::Feasible(st) => {
                             debug!("Feasible pivot_b [bottleneck: {}, cost: {}]", st.2, st.1);
                             final_st = Some(st.0);
@@ -91,31 +112,5 @@ impl Berman {
         }
         trace!("Dual bound search finished [bottleneck: {}, cost: {}, iterations: {}]", bottleneck, cost, iterations);
         (final_st, cost, bottleneck)
-    }
-
-    fn check_pivot(graph: &MutableGraph, budget: f64, pivot: usize, unique_weights: &[f64]) -> PivotResultMut {
-        let mut pivot_edges = Vec::with_capacity(graph.edges().len());
-        //let pivot_weight = graph.edges()[pivot].borrow().get_weight();
-        let pivot_weight = unique_weights[pivot];
-        debug!("Pivot weight: {}", pivot_weight);
-        for edge in graph.edges() {
-            if edge.borrow().get_weight() <= pivot_weight {
-                pivot_edges.push(Rc::clone(edge));
-            }
-        }
-        let mut pivot_graph = MutableGraph::new(graph.nodes_copy(), pivot_edges);
-        debug!("Pivot graph edges: {}", pivot_graph.edges().len());
-        let (op_st, cost, bottleneck) = pivot_graph.min_sum_st(CalculationType::Cost);
-        match op_st {
-            Some(st) => {
-                if cost <= budget {
-                    PivotResultMut::Feasible((st, cost, bottleneck))
-                } else {
-                    debug!("Infeasible cost: {}", cost);
-                    PivotResultMut::Infeasible
-                }
-            }
-            None => PivotResultMut::Infeasible
-        }
     }
 }

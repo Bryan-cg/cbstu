@@ -1,13 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use log::{debug, trace, warn};
+use log::{trace, warn};
 use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::quick_select::QuickSelect;
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::edge::Edge;
-use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
-use crate::print_edges;
+
 
 pub struct Punnen();
 
@@ -43,8 +42,11 @@ impl Punnen {
         }
         trace!("MCST lower bound is not valid solution [cost: {}]", cost);
         let disjoint_graph = graph.get_edges_weight_bigger_than(lower_bound);
+        trace!("Disjoint graph has {} edges", disjoint_graph.edges().len());
         let union_edges = Util::union_edges(disjoint_graph.edges(), op_min_cost_st.unwrap().edges_copy());
+        trace!("Union graph has {} edges", union_edges.len());
         let unique_weights = Util::unique_weight_list(graph.edges(), f64::NEG_INFINITY, 0.0);
+        trace!("Unique weights len: {}", unique_weights.len());
         trace!("Recursive search for valid solution");
         Self::recursive_find(&graph, budget, lower_bound, upper_bound, union_edges, &unique_weights)
     }
@@ -64,7 +66,8 @@ impl Punnen {
         if cost > budget {
             trace!("Found infeasible solution: cost: {}", cost);
             let disjoint_graph = graph_union.get_edges_weight_bigger_than(median_unique);
-            let new_union_edges = Util::union_edges(disjoint_graph.edges(), graph_below_w.edges_copy());
+            //let new_union_edges = Util::union_edges(disjoint_graph.edges(), graph_below_w.edges_copy());
+            let new_union_edges = Util::union_edges(disjoint_graph.edges(), op_min_cost_st.unwrap().edges_copy());
             lower_bound = median_unique;
             return Self::recursive_find(graph, budget, lower_bound, upper_bound, new_union_edges, unique_weights)
         }

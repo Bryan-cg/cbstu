@@ -6,8 +6,6 @@ use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::punnen:
 use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::berman::Berman;
 use final_network_sts::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
 use final_network_sts::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
-use final_network_sts::algorithms::util::Util;
-use final_network_sts::datastructures::graph::immutable_graph::ImmutableGraph;
 use final_network_sts::datastructures::graph::mutable_graph::MutableGraph;
 
 fn edge_elimination(graph: &MutableGraph, budget: f64) -> f64 {
@@ -25,30 +23,27 @@ fn berman(graph: &MutableGraph, budget: f64) -> f64 {
     bottleneck
 }
 
-fn mbst(graph: &mut ImmutableGraph) -> f64 {
-    let (_, bottleneck) = graph.min_bot_st();
-    //let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight);
-    bottleneck
-}
-
-
-fn mbst_mut(graph: &mut MutableGraph) -> f64 {
+fn mbst(graph: &mut MutableGraph) -> f64 {
     let (_, bottleneck) = MBST::run_mutable(graph);
-    //let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight);
     bottleneck
 }
 
-fn mst(graph: &mut ImmutableGraph) -> f64 {
-    let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight);
+fn mst(graph: &mut MutableGraph) -> f64 {
+    let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight, false);
     bottleneck
 }
 
 fn criterion_benchmark_algorithms(c: &mut Criterion) {
-    let graph_giant_mut = InputHandler::read_mut("data/es10000fst01_network27019_39407.json");
-    let graph_big_mut = InputHandler::read_mut("data/wrp4-76_network766_1535.json");
-    let graph_mid_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
-    let graph_small_mut = InputHandler::read_mut("data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
-    let graph_tiny_mut = InputHandler::read_mut("data/atlanta--D-B-M-N-C-A-N-N_network15_22.json");
+    let mut graph_giant_mut = InputHandler::read_mut("data/es10000fst01_network27019_39407.json");
+    let mut graph_big_mut = InputHandler::read_mut("data/wrp4-76_network766_1535.json");
+    let mut graph_mid_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
+    let mut graph_small_mut = InputHandler::read_mut("data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
+    let mut graph_tiny_mut = InputHandler::read_mut("data/atlanta--D-B-M-N-C-A-N-N_network15_22.json");
+    graph_giant_mut.inverse_weights();
+    graph_big_mut.inverse_weights();
+    graph_mid_mut.inverse_weights();
+    graph_small_mut.inverse_weights();
+    graph_tiny_mut.inverse_weights();
     let mut group = c.benchmark_group("Algorithms");
     group.measurement_time(Duration::from_secs(10));
     //group.bench_function("punnen_giant", |b| b.iter(|| punnen(black_box(&graph_giant), black_box(1000.0))));
@@ -70,12 +65,11 @@ fn criterion_benchmark_algorithms(c: &mut Criterion) {
 }
 
 fn criterion_benchmark_mbst(c: &mut Criterion) {
-    let mut graph_big = InputHandler::read("data/dfn-gwin--D-B-E-N-C-A-N-N_network11_47.json").negative_weights();
-    let mut graph_big_mut = InputHandler::read_mut("data/dfn-gwin--D-B-E-N-C-A-N-N_network11_47.json");
+    let mut graph_big = InputHandler::read_mut("data/dfn-gwin--D-B-E-N-C-A-N-N_network11_47.json");
+    graph_big.inverse_weights();
     let mut group = c.benchmark_group("MBST");
-    group.bench_function("MBST_immutable", |b| b.iter(|| mbst(black_box(&mut graph_big))));
-    group.bench_function("MBST_mutable", |b| b.iter(|| mbst_mut(black_box(&mut graph_big_mut))));
-    group.bench_function("MST_immutable", |b| b.iter(|| mst(black_box(&mut graph_big))));
+    group.bench_function("MBST", |b| b.iter(|| mbst(black_box(&mut graph_big))));
+    group.bench_function("MST", |b| b.iter(|| mst(black_box(&mut graph_big))));
     group.finish();
 }
 

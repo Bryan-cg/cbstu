@@ -54,6 +54,10 @@ impl MutableGraph {
         Kruskal::run_mutable(self, calculation_type)
     }
 
+    pub fn min_sum_st_sorted(&mut self, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
+        Kruskal::sorted_build(self, calculation_type)
+    }
+
     pub fn min_bot_st(&mut self) -> (Option<MutableGraph>, f64) {
         MBST::run_mutable(self)
     }
@@ -63,7 +67,7 @@ impl MutableGraph {
     }
 
     pub fn get_edges_weight_lower_or_eq_than(&self, weight: f64) -> MutableGraph {
-        let mut edges = Vec::new();
+        let mut edges = Vec::with_capacity(self.edges.len());
         self.edges.iter().for_each(|edge| {
             if edge.borrow().get_weight() <= weight {
                 edges.push(Rc::clone(edge));
@@ -96,11 +100,17 @@ impl MutableGraph {
 
     pub fn is_connected_graph(&self) -> bool {
         //check if all nodes are connected
+        trace!("Checking if graph is connected");
         let mut visited = vec![false; self.nodes.len()];
         let mut stack = Vec::new();
         stack.push(0);
+        let mut iter = 0;
         while !stack.is_empty() {
             let node_id = stack.pop().unwrap();
+            iter += 1;
+            if iter % 1000 == 0 {
+                trace!("iter: {}", iter);
+            }
             if !visited[node_id] {
                 visited[node_id] = true;
                 let adj_edges = self.adj_edges(node_id);
@@ -162,5 +172,50 @@ impl MutableGraph {
         self.edges.iter().for_each(|edge| {
             edge.borrow_mut().inverse_weights();
         });
+    }
+
+    //Dont use this function, it is only for debugging
+    pub fn has_upgraded_equivalent(&self, u: usize, v: usize) -> bool {
+        for edge in self.adj_edges(u) {
+            if edge.borrow().endpoints().0 == v || edge.borrow().endpoints().1 == v {
+                if edge.borrow().is_upgraded() { return true; }
+            }
+        }
+        return false;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use crate::datastructures::graph::edge::Edge;
+    use crate::datastructures::graph::mutable_graph::MutableGraph;
+    use crate::datastructures::graph::node::Node;
+
+    #[test]
+    fn test_get_edges_weight_lower_or_eq_than() {
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        let node1 = Rc::new(Node::new(0, 0.0, 0.0));
+        let node2 = Rc::new(Node::new(1, 0.0, 0.0));
+        let node3 = Rc::new(Node::new(2, 0.0, 0.0));
+        let node4 = Rc::new(Node::new(3, 0.0, 0.0));
+        nodes.push(Rc::clone(&node1));
+        nodes.push(Rc::clone(&node2));
+        nodes.push(Rc::clone(&node3));
+        nodes.push(Rc::clone(&node4));
+
+        edges.push(Rc::new(RefCell::new(Edge::new(0, 1).weight(1.0))));
+        edges.push(Rc::new(RefCell::new(Edge::new(0, 2).weight(2.0))));
+        edges.push(Rc::new(RefCell::new(Edge::new(0, 3).weight(3.0))));
+        edges.push(Rc::new(RefCell::new(Edge::new(1, 2).weight(4.0))));
+        edges.push(Rc::new(RefCell::new(Edge::new(1, 3).weight(5.0))));
+        edges.push(Rc::new(RefCell::new(Edge::new(2, 3).weight(6.0))));
+        let graph = MutableGraph::new(Rc::new(nodes), edges);
+        let graph2 = graph.get_edges_weight_lower_or_eq_than(3.0);
+        assert_eq!(graph2.edges().len(), 3);
+        //check number of pointers in rc
+        assert_eq!(Rc::strong_count(&graph2.edges()[0]), 2);
     }
 }

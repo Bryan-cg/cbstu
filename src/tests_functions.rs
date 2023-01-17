@@ -9,9 +9,8 @@ mod tests {
 
     #[test]
     fn test_easy_instance() {
-        let graph = InputHandler::read("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");
-        let graph_mut = InputHandler::read_mut("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");
-        let neg_graph = graph.negative_weights();
+        let mut graph_mut = InputHandler::read_mut("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");
+        graph_mut.inverse_weights();
         let (_, _, bottleneck_big_budget_berman) = Berman::run(&graph_mut, 10000.0);
         let (_, _, bottleneck_small_budget_berman) = Berman::run(&graph_mut, 100.0);
         let (_, _, bottleneck_big_budget_punnen) = Punnen::run(&graph_mut, 10000.0);
@@ -28,9 +27,8 @@ mod tests {
 
     #[test]
     fn test_difficult_instance1() {
-        let graph = InputHandler::read("test_data/ta2--D-B-E-N-C-A-N-N_network65_108.json");
-        let neg_graph = graph.negative_weights();
-        let graph_mut = InputHandler::read_mut("test_data/ta2--D-B-E-N-C-A-N-N_network65_108.json");
+        let mut graph_mut = InputHandler::read_mut("test_data/ta2--D-B-E-N-C-A-N-N_network65_108.json");
+        graph_mut.inverse_weights();
         let (_, _, bottleneck) = Berman::run(&graph_mut, 300.0);
         let (_, _, bottleneck2) = Punnen::run(&graph_mut, 300.0);
         let (_, _, bottleneck3) = EdgeElimination::run(&graph_mut, 300.0);
@@ -41,9 +39,8 @@ mod tests {
 
     #[test]
     fn test_difficult_instance2() {
-        let graph = InputHandler::read("data/wrp4-11_network123_233.json");
-        let graph_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
-        let neg_graph = graph.negative_weights();
+        let mut graph_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
+        graph_mut.inverse_weights();
         let (_, _, bottleneck) = Berman::run(&graph_mut, 1000.0);
         let (_, _, bottleneck_2) = Punnen::run(&graph_mut, 1000.0);
         let (_, _, bottleneck_3) = EdgeElimination::run(&graph_mut, 1000.0);
@@ -72,9 +69,8 @@ mod tests {
 
     #[test]
     fn random_test_equal_results() {
-        let graph = InputHandler::read("test_data/germany50--D-B-L-N-C-A-N-N_network50_88.json");
-        let graph_mut = InputHandler::read_mut("test_data/germany50--D-B-L-N-C-A-N-N_network50_88.json");
-        let neg_graph = graph.negative_weights();
+        let mut graph_mut = InputHandler::read_mut("test_data/germany50--D-B-L-N-C-A-N-N_network50_88.json");
+        graph_mut.inverse_weights();
         let (_, _, bottleneck) = Berman::run(&graph_mut, 150.0);
         let (_, _, bottleneck2) = Punnen::run(&graph_mut, 150.0);
         let (_, _, bottleneck3) = EdgeElimination::run(&graph_mut, 150.0);
@@ -84,9 +80,8 @@ mod tests {
 
     #[test]
     fn random_test_equal_results2() {
-        let graph = InputHandler::read("test_data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
-        let graph_mut = InputHandler::read_mut("test_data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
-        let neg_graph = graph.negative_weights();
+        let mut graph_mut = InputHandler::read_mut("test_data/pioro40--D-B-M-N-C-A-N-N_network40_89.json");
+        graph_mut.inverse_weights();
         let (_, _, bottleneck) = Berman::run(&graph_mut, 200.0);
         let (_, _, bottleneck2) = Punnen::run(&graph_mut, 200.0);
         let (_, _, bottleneck3) = EdgeElimination::run(&graph_mut, 200.0);
@@ -102,9 +97,8 @@ mod tests {
             let path = path.to_str().unwrap();
             if path.ends_with(".json") {
                 let budget = rand::thread_rng().gen_range(100.0..1000.0);
-                let graph = InputHandler::read(path);
-                let graph_mut = InputHandler::read_mut(path);
-                let neg_graph = graph.negative_weights();
+                let mut graph_mut = InputHandler::read_mut(path);
+                graph_mut.inverse_weights();
                 let (_, _, bottleneck) = Berman::run(&graph_mut, budget);
                 let (_, _, bottleneck2) = Punnen::run(&graph_mut, budget);
                 let (_, _, bottleneck3) = EdgeElimination::run(&graph_mut, budget);

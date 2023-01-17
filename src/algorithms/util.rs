@@ -1,8 +1,10 @@
 use std::cell::RefCell;
+use std::collections::HashSet;
 use std::rc::Rc;
 use array_tool::vec::{Union, Uniq};
+use log::trace;
+use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::datastructures::graph::edge::Edge;
-use crate::datastructures::graph::immutable_graph::ImmutableGraph;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 
 ///macro to print edges of Vec<Rc<Edge>>
@@ -10,14 +12,9 @@ use crate::datastructures::graph::mutable_graph::MutableGraph;
 macro_rules! print_edges {
     ($edges:expr) => {
         $edges.iter().for_each(|edge| {
-            println!("{} - {}, {}", edge.borrow().endpoints().0, edge.borrow().endpoints().1, edge.borrow().get_weight());
+            println!("{} - {}, {}, {}", edge.borrow().endpoints().0, edge.borrow().endpoints().1, edge.borrow().get_cost(), edge.borrow().is_upgraded());
         });
     };
-}
-
-pub enum PivotResult {
-    Feasible((ImmutableGraph, f64, f64)),
-    Infeasible,
 }
 
 pub enum PivotResultMut {
@@ -30,18 +27,6 @@ pub struct Util();
 impl Util {
     #[inline]
     ///Creates a new graph with the same nodes, but each edge is duplicated with its original weight (cost 0) and upgraded weight (upgrade cost).
-    pub fn duplicate_edges(graph: &ImmutableGraph) -> ImmutableGraph {
-        let mut edges = Vec::new();
-        for edge in graph.edges() {
-            let (u, v) = edge.endpoints();
-            edges.push(Rc::new(Edge::new(u, v).weight(edge.get_weight()).cost(0.0).upgraded(false)));
-            edges.push(Rc::new(Edge::new(u, v).weight(edge.get_upgraded_weight()).cost(edge.get_cost()).upgraded(true)));
-        }
-        ImmutableGraph::new(graph.nodes_copy(), edges)
-    }
-
-    #[inline]
-    ///Creates a new graph with the same nodes, but each edge is duplicated with its original weight (cost 0) and upgraded weight (upgrade cost).
     pub fn duplicate_edges_mut(graph: &MutableGraph) -> MutableGraph {
         let mut edges = Vec::new();
         for edge in graph.edges() {
@@ -50,30 +35,6 @@ impl Util {
             edges.push(Rc::new(RefCell::new(Edge::new(u, v).weight(edge.borrow().get_upgraded_weight()).cost(edge.borrow().get_cost()).upgraded(true))));
         }
         MutableGraph::new(graph.nodes_copy(), edges)
-    }
-
-
-    #[inline]
-    pub fn duplicate_only_upgraded(graph: &ImmutableGraph) -> ImmutableGraph {
-        let mut edges = Vec::new();
-        for edge in graph.edges() {
-            let (u, v) = edge.endpoints();
-            edges.push(Rc::new(Edge::new(u, v).weight(edge.get_upgraded_weight()).cost(edge.get_cost()).upgraded(true)));
-        }
-        ImmutableGraph::new(graph.nodes_copy(), edges)
-    }
-
-    #[inline]
-    pub fn update_bottleneck(bottleneck: f64, edge: &Rc<Edge>, inverse: bool) -> f64 {
-        let mut bottleneck = bottleneck;
-        if inverse {
-            if edge.get_weight() > bottleneck {
-                bottleneck = edge.get_weight();
-            }
-        } else if edge.get_weight() < bottleneck {
-            bottleneck = edge.get_weight();
-        }
-        bottleneck
     }
 
     #[inline]
@@ -90,61 +51,63 @@ impl Util {
     }
 
     #[inline]
-    ///Return disjoint list of edges that are in edges1 but not in edges2
-    pub fn disjoint_edges(edges1: &Vec<Rc<RefCell<Edge>>>, edges2: Vec<Rc<RefCell<Edge>>>) -> Vec<Rc<RefCell<Edge>>> {
-        edges1.uniq(edges2)
-    }
-
-    #[inline]
     ///union of 2 list of edges without duplicates
     pub fn union_edges(edges1: &Vec<Rc<RefCell<Edge>>>, edges2: Vec<Rc<RefCell<Edge>>>) -> Vec<Rc<RefCell<Edge>>> {
-        edges1.union(edges2)
+        let mut edges = HashSet::new();
+        edges1.iter().for_each(|edge| {
+            edges.insert(edge.borrow().clone());
+        });
+        edges2.iter().for_each(|edge| {
+            edges.insert(edge.borrow().clone());
+        });
+        edges.into_iter().map(|edge| Rc::new(RefCell::new(edge))).collect()
     }
 
     #[inline]
     ///Return unique list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
     pub fn unique_weight_list(edges: &[Rc<RefCell<Edge>>], lower_bound: f64, upper_bound: f64) -> Vec<f64> {
-        let mut weights = Vec::new();
+        let mut weights = HashSet::new();
         edges.iter().for_each(|edge| {
             if edge.borrow().get_weight() > lower_bound && edge.borrow().get_weight() <= upper_bound {
-                weights.push(edge.borrow().get_weight());
-                //weights.contains(&edge.get_weight());
+                weights.insert(edge.borrow().get_weight() as i64);
             }
         });
-        weights.unique()
+        weights.into_iter().map(|weight| weight as f64).collect()
     }
 
     #[inline]
     ///Return unique list of weights with weight bigger then lower-bound and smaller then or equal to upperbound
     pub fn unique_weight_list_above_or_eq(edges: &[Rc<RefCell<Edge>>], threshold: f64) -> Vec<f64> {
-        let mut weights = Vec::new();
+        let mut weights_set = HashSet::new();
         edges.iter().for_each(|edge| {
             if edge.borrow().get_weight() >= threshold {
-                weights.push(edge.borrow().get_weight());
+                weights_set.insert(edge.borrow().get_weight() as i64);
             }
         });
-        weights.unique()
+        weights_set.into_iter().map(|weight| weight as f64).collect()
     }
 
     #[inline]
     ///Return vector slice with weight bigger then lower-bound en smaller then or equal to upper bound
     pub fn relevant_slice(weights: &[f64], lower_bound: f64, upper_bound: f64) -> Vec<f64> {
-        weights.iter().filter(|&&x| x > lower_bound && x <= upper_bound).cloned().collect()
+        weights.iter().filter(|&&x| x > lower_bound && x <= upper_bound).cloned().collect()//todo use retain
+        //weights.retain(|&&x| x > lower_bound && x <= upper_bound);
+        //weights
     }
 
     #[inline]
-    //sort list of weights and return median (O(n log n)), use quick_select for faster performance
-    pub fn median(uniq_weights: &mut Vec<f64>) -> f64 {
-        uniq_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let middle = uniq_weights.len() / 2;
-        if uniq_weights.len() % 2 == 0 {
-            if uniq_weights[middle] < uniq_weights[middle - 1] {
-                uniq_weights[middle]
-            } else {
-                uniq_weights[middle - 1]
+    pub(crate) fn check_pivot(graph: &MutableGraph, pivot_weight: f64, budget: f64) -> PivotResultMut {
+        let mut graph_below_pivot = graph.get_edges_weight_lower_or_eq_than(pivot_weight);
+        let (op_mst, cost, bottleneck) = graph_below_pivot.min_sum_st(CalculationType::Cost);
+        match op_mst {
+            Some(st) => {
+                match cost {
+                    cost if cost <= budget => PivotResultMut::Feasible((st, cost, bottleneck)),
+                    _ => PivotResultMut::Infeasible
+                }
             }
-        } else {
-            uniq_weights[middle]
+            None => PivotResultMut::Infeasible
         }
     }
+
 }
