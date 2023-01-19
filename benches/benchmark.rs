@@ -29,7 +29,7 @@ fn mbst(graph: &mut MutableGraph) -> f64 {
 }
 
 fn mst(graph: &mut MutableGraph) -> f64 {
-    let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight, false);
+    let (_, _, bottleneck) = graph.min_sum_st(CalculationType::Weight);
     bottleneck
 }
 

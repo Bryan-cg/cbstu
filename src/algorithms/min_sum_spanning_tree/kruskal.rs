@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use log::{debug, error, trace};
+use log::{debug, error, info, trace};
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::datastructures::uf::union_find::UF;
@@ -16,15 +16,18 @@ pub struct Kruskal();
 
 impl Kruskal {
     /// Returns a minimal spanning tree of the given graph, the total weight/cost of the tree and the bottleneck WEIGHT (not cost) of the tree.
-    pub fn run_mutable(graph: &mut MutableGraph, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
+    pub fn run_mutable(graph: &mut MutableGraph, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
+        let start = std::time::Instant::now();
         match calculation_type {
-            CalculationType::Cost => graph.edges_mut().sort_unstable_by(|a, b| a.borrow().get_cost().partial_cmp(&b.borrow().get_cost()).unwrap()),
-            CalculationType::Weight => graph.edges_mut().sort_unstable_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()),
+            CalculationType::Cost => graph.edges_mut().sort_by(|a, b| a.borrow().get_cost().partial_cmp(&b.borrow().get_cost()).unwrap()),
+            CalculationType::Weight => graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()),
         }
-        Self::sorted_build(graph, calculation_type)
+        let end = start.elapsed().as_nanos() as f64 / 1_000_000.0;
+        trace!("Kruskal over {} edges took {} ms", graph.edges().len(), end);
+        Self::sorted_build(graph, calculation_type, budget)
     }
 
-    pub fn sorted_build(graph: &mut MutableGraph, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
+    pub fn sorted_build(graph: &mut MutableGraph, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
         let mut st_edges = Vec::new();
         let mut weight = 0.0;
         let inverse = matches!(graph.edges()[0].borrow().get_weight(), w if w < 0.0);
@@ -42,7 +45,16 @@ impl Kruskal {
                     CalculationType::Cost => {
                         weight += edge.borrow().get_cost();
                         bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+                        match budget {
+                            Some(b) => {
+                                if weight > b {
+                                    return (None, 0.0, 0.0);
+                                }
+                            }
+                            None => {}
+                        }
                     }
+
                     CalculationType::Weight => {
                         weight += edge.borrow().get_weight();
                         bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
@@ -179,7 +191,7 @@ mod tests {
             edges.push(Rc::new(RefCell::new(Edge::new(*v, *w).weight(*weight))));
         });
         let mut graph = MutableGraph::new(Rc::new(nodes), edges);
-        let (st, weight, bottleneck) = Kruskal::run_mutable(&mut graph, CalculationType::Weight);
+        let (st, weight, bottleneck) = Kruskal::run_mutable(&mut graph, CalculationType::Weight, None);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
         assert_eq!(weight, 7.0);
@@ -213,7 +225,7 @@ mod tests {
         });
         let nodes_rc = Rc::new(nodes);
         let mut graph_mut = MutableGraph::new(Rc::clone(&nodes_rc), edges_mut);
-        let (st_mut, weight_mut, bottleneck_mut) = Kruskal::run_mutable(&mut graph_mut, CalculationType::Weight);
+        let (st_mut, weight_mut, bottleneck_mut) = Kruskal::run_mutable(&mut graph_mut, CalculationType::Weight, None);
         assert!(st_mut.is_some());
         assert!(st_mut.unwrap().is_spanning_tree());
         assert_eq!(bottleneck_mut, 1.0);
@@ -246,7 +258,7 @@ mod tests {
             edges.push(Rc::new(RefCell::new(Edge::new(*v, *w).cost(*weight))));
         });
         let mut graph = MutableGraph::new(Rc::new(nodes), edges);
-        let (st, weight, bottleneck) = Kruskal::run_mutable(&mut graph, CalculationType::Cost);
+        let (st, weight, bottleneck) = Kruskal::run_mutable(&mut graph, CalculationType::Cost, None);
         assert!(st.is_some());
         assert!(st.unwrap().is_spanning_tree());
         assert_eq!(weight, 37.0);

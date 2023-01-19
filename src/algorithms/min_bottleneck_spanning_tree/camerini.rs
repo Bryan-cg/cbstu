@@ -14,9 +14,12 @@ pub struct MBST();
 impl MBST {
     pub fn run_mutable(graph: &mut MutableGraph) -> (Option<MutableGraph>, f64) {
         trace!("Calculating MBST [Camerini et al.]");
+        let begin = std::time::Instant::now();
         let st_edges = Self::recursive_search_mut(graph);
         let bottleneck = Self::find_bottleneck(&st_edges);
         let st = MutableGraph::new(graph.nodes_copy(), st_edges);
+        let end = begin.elapsed().as_nanos() as f64 / 1_000_000.0;
+        trace!("MBST [Camerini et al.] took {} ms", end);
         debug_assert!(st.is_spanning_tree());
         (Some(st), bottleneck)
     }

@@ -51,11 +51,15 @@ impl MutableGraph {
     }
 
     pub fn min_sum_st(&mut self, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
-        Kruskal::run_mutable(self, calculation_type)
+        Kruskal::run_mutable(self, calculation_type, None)
     }
 
-    pub fn min_sum_st_sorted(&mut self, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
-        Kruskal::sorted_build(self, calculation_type)
+    pub fn min_sum_early_detection(&mut self, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
+        Kruskal::run_mutable(self, calculation_type, budget)
+    }
+
+    pub fn sorted_build(&mut self, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
+        Kruskal::sorted_build(self, calculation_type, None)
     }
 
     pub fn min_bot_st(&mut self) -> (Option<MutableGraph>, f64) {

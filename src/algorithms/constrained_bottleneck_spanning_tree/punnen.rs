@@ -11,9 +11,8 @@ use crate::datastructures::graph::mutable_graph::MutableGraph;
 pub struct Punnen();
 
 impl Punnen {
-    pub fn run(original_graph: &MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
+    pub fn run(graph: &mut MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Solving Constrained bottleneck spanning tree problem with Punnen's algorithm");
-        let mut graph = Util::duplicate_edges_mut(original_graph);
         let (op_bst,_, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
@@ -42,11 +41,8 @@ impl Punnen {
         }
         trace!("MCST lower bound is not valid solution [cost: {}]", cost);
         let disjoint_graph = graph.get_edges_weight_bigger_than(lower_bound);
-        trace!("Disjoint graph has {} edges", disjoint_graph.edges().len());
         let union_edges = Util::union_edges(disjoint_graph.edges(), op_min_cost_st.unwrap().edges_copy());
-        trace!("Union graph has {} edges", union_edges.len());
         let unique_weights = Util::unique_weight_list(graph.edges(), f64::NEG_INFINITY, 0.0);
-        trace!("Unique weights len: {}", unique_weights.len());
         trace!("Recursive search for valid solution");
         Self::recursive_find(&graph, budget, lower_bound, upper_bound, union_edges, &unique_weights)
     }
