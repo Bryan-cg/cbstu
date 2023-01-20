@@ -10,12 +10,12 @@ use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::print_edges;
 
-pub struct EdgeElimination();
+pub struct EdgeEliminationOld();
 
-impl EdgeElimination {
+impl EdgeEliminationOld {
     pub fn run(graph: &mut MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
         trace!("Solving Constrained bottleneck spanning tree problem with Edge Elimination algorithm");
-        let (op_bst, _, bottleneck_mbst) = graph.min_sum_st(CalculationType::Weight);
+        let (op_bst, _, bottleneck_mbst) = graph.mst(CalculationType::Weight);
         let total_cost = graph.calculate_total_cost();
         if total_cost <= budget {
             trace!("MBST is valid solution [bottleneck: {}, cost: {}]", bottleneck_mbst, total_cost);
@@ -28,7 +28,6 @@ impl EdgeElimination {
         Self::dual_bound_search(graph, relevant_edges, budget)
     }
 
-    //todo if cost is increased, then Berman speed is increased, but not in the edge elimination algorithm, find out why
     fn dual_bound_search(graph: &mut MutableGraph, relevant_edges: Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
         trace!("Dual bound search");
         let mut max = relevant_edges.len();

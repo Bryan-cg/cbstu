@@ -12,10 +12,10 @@ use crate::datastructures::uf::union_find::UF;
 pub struct MBST();
 
 impl MBST {
-    pub fn run_mutable(graph: &mut MutableGraph) -> (Option<MutableGraph>, f64) {
+    pub fn run(graph: &mut MutableGraph) -> (Option<MutableGraph>, f64) {
         trace!("Calculating MBST [Camerini et al.]");
         let begin = std::time::Instant::now();
-        let st_edges = Self::recursive_search_mut(graph);
+        let st_edges = Self::recursive_search(graph);
         let bottleneck = Self::find_bottleneck(&st_edges);
         let st = MutableGraph::new(graph.nodes_copy(), st_edges);
         let end = begin.elapsed().as_nanos() as f64 / 1_000_000.0;
@@ -24,7 +24,7 @@ impl MBST {
         (Some(st), bottleneck)
     }
 
-    fn recursive_search_mut(graph: &mut MutableGraph) -> Vec<Rc<RefCell<Edge>>> {
+    fn recursive_search(graph: &mut MutableGraph) -> Vec<Rc<RefCell<Edge>>> {
         if graph.edges().len() == 1 {
             return graph.edges_copy();
         }
@@ -50,14 +50,14 @@ impl MBST {
         }
         if uf.count() == 1 {
             let mut small_half_graph = MutableGraph::new(graph.nodes_copy(), small_half);
-            return Self::recursive_search_mut(&mut small_half_graph);
+            return Self::recursive_search(&mut small_half_graph);
         }
-        let mut super_graph = Self::build_super_graph_mut(&big_half, &mut uf, graph.nodes().len());
-        res.append(&mut Self::recursive_search_mut(&mut super_graph));
+        let mut super_graph = Self::build_super_graph(&big_half, &mut uf, graph.nodes().len());
+        res.append(&mut Self::recursive_search(&mut super_graph));
         res
     }
 
-    fn build_super_graph_mut(big_half: &[Rc<RefCell<Edge>>], uf: &mut UF, n: usize) -> MutableGraph {
+    fn build_super_graph(big_half: &[Rc<RefCell<Edge>>], uf: &mut UF, n: usize) -> MutableGraph {
         let mut nodes = Vec::new();
         let mut edges = Vec::new();
         let mut keys = vec![(false, 0); n];
@@ -89,7 +89,7 @@ impl MBST {
             false => f64::INFINITY,
         };
         st_edges.iter().for_each(|edge| {
-            bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+            bottleneck = Util::update_bottleneck(bottleneck, edge, inverse);
         });
         bottleneck
     }
@@ -157,8 +157,8 @@ mod tests {
             edges.push(Rc::new(RefCell::new(Edge::new(*v, *w).weight(*weight))));
         });
         let mut graph = MutableGraph::new(Rc::new(nodes), edges);
-        let (_, _, bottleneck_kruskal) = graph.min_sum_st(CalculationType::Weight);
-        let (st_cam, bottleneck_cam) = MBST::run_mutable(&mut graph);
+        let (_, _, bottleneck_kruskal) = graph.mst(CalculationType::Weight);
+        let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
         assert!(st_cam.is_some());
         assert!(st_cam.unwrap().is_spanning_tree());
         assert_eq!(bottleneck_cam, bottleneck_kruskal);
@@ -204,8 +204,8 @@ mod tests {
             edges.push(Rc::new(RefCell::new(Edge::new(*v, *w).weight(*weight))));
         });
         let mut graph = MutableGraph::new(Rc::new(nodes), edges);
-        let (_, _, bottleneck_kruskal) = graph.min_sum_st(CalculationType::Weight);
-        let (st_cam, bottleneck_cam) = MBST::run_mutable(&mut graph);
+        let (_, _, bottleneck_kruskal) = graph.mst(CalculationType::Weight);
+        let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
         assert!(st_cam.is_some());
         assert!(st_cam.unwrap().is_spanning_tree());
         assert_eq!(bottleneck_cam, bottleneck_kruskal);
@@ -252,7 +252,7 @@ mod tests {
             edges.push(Rc::new(RefCell::new(Edge::new(*v, *w).weight(*weight))));
         });
         let mut graph = MutableGraph::new(Rc::new(nodes), edges);
-        let (st_cam, bottleneck_cam) = MBST::run_mutable(&mut graph);
+        let (st_cam, bottleneck_cam) = MBST::run(&mut graph);
         assert!(st_cam.is_some());
         assert_eq!(bottleneck_cam, 1.0);
     }

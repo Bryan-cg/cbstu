@@ -1,10 +1,9 @@
 use std::time::Duration;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use final_network_sts::io::input_handler::InputHandler;
-use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::edge_elimination::EdgeElimination;
 use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::punnen::Punnen;
 use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::berman::Berman;
-use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::ee_fast::EE;
+use final_network_sts::algorithms::constrained_bottleneck_spanning_tree::fast_edge_elimination::EE;
 use final_network_sts::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
 use final_network_sts::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use final_network_sts::datastructures::graph::mutable_graph::MutableGraph;

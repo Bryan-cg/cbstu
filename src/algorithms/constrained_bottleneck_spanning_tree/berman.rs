@@ -4,6 +4,7 @@ use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
 use crate::algorithms::util::{PivotResult, Util};
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 
+// Algorithm based on the paper "The Constrained Bottleneck Problem in Networks" by Berman et al.
 pub struct Berman();
 
 impl Berman {
@@ -12,7 +13,6 @@ impl Berman {
         let mut unique_weights = Util::unique_weight_list(graph.edges(), f64::NEG_INFINITY, 0.0);
         unique_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
         Self::bisection_search(graph, &unique_weights, budget)
-        //Self::naive_search(graph, &unique_weights, budget)
     }
 
     fn naive_search(graph: &mut MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64) {
@@ -77,7 +77,7 @@ impl Berman {
     //     let mut iterations = 0;
     //     while min < max {
     //         iterations += 1;
-    //         pivot_a = (max + min) / 2; //todo floor
+    //         pivot_a = (max + min) / 2;
     //         pivot_b = max - 1;
     //         pivot_a_weight = unique_weights[pivot_a];
     //         pivot_b_weight = unique_weights[pivot_b];

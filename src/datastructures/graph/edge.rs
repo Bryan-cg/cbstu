@@ -113,7 +113,6 @@ impl PartialEq for Edge {
 }
 impl Eq for Edge {}
 
-//todo: check if hasing is correct
 impl Hash for Edge {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.either.hash(state);

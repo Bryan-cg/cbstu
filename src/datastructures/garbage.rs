@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 
+/// Simple datastructure to cache graphs that can be cleaned up at a later stage.
 pub struct Garbage {
     trash: Vec<Rc<MutableGraph>>,
 }
