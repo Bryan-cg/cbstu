@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::rc::Rc;
 use log::{trace, warn};
 use crate::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
-use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, Kruskal};
+use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, ConnectionType, Kruskal};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::node::Node;
 
@@ -54,12 +54,12 @@ impl MutableGraph {
         Kruskal::run_mutable(self, calculation_type, None)
     }
 
-    pub fn min_sum_early_detection(&mut self, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
-        Kruskal::run_mutable(self, calculation_type, budget)
+    pub fn mcst(&mut self, calculation_type: CalculationType) -> (ConnectionType, MutableGraph, f64, f64) {
+        Kruskal::run(self, calculation_type)
     }
 
-    pub fn sorted_build(&mut self, calculation_type: CalculationType) -> (Option<MutableGraph>, f64, f64) {
-        Kruskal::sorted_build(self, calculation_type, None)
+    pub fn min_sum_early_detection(&mut self, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
+        Kruskal::run_mutable(self, calculation_type, budget)
     }
 
     pub fn min_bot_st(&mut self) -> (Option<MutableGraph>, f64) {

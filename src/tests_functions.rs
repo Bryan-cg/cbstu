@@ -22,12 +22,11 @@ mod tests {
         let (_, _, bottleneck_small_budget_punnen) = Punnen::run(&mut duplicated_graph, 100.0);
         let (_, _, bottleneck_big_budget_edg, _) = EdgeElimination::run(&mut duplicated_graph, 10000.0);
         let (_, _, bottleneck_small_budget_edg, _) = EdgeElimination::run(&mut duplicated_graph, 100.0);
-        let (_, _, bottleneck_big_budget_ee) = EE::run_test(duplicated_graph,10000.0);
+        let (_, _, bottleneck_big_budget_ee, _) = EE::run_test_bin(duplicated_graph,10000.0);
         graph_mut = InputHandler::read_mut("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");
         graph_mut.inverse_weights();
         duplicated_graph = Util::duplicate_edges_mut(&graph_mut);
-        let (st, _, bottleneck_small_budget_ee) = EE::run_test(duplicated_graph,100.0);
-        print_edges!(st.unwrap().edges());
+        let (st, _, bottleneck_small_budget_ee, _) = EE::run_test_bin(duplicated_graph,100.0);
         assert_eq!(bottleneck_big_budget_berman, -26.0);
         assert_eq!(bottleneck_small_budget_berman, -14.0);
         assert_eq!(bottleneck_big_budget_edg, -26.0);
@@ -46,7 +45,7 @@ mod tests {
         let (_, _, bottleneck) = Berman::run(&mut duplicated_graph, 300.0);
         let (_, _, bottleneck2) = Punnen::run(&mut duplicated_graph, 300.0);
         let (_, _, bottleneck3, _) = EdgeElimination::run(&mut duplicated_graph, 300.0);
-        let (_, _, bottleneck4) = EE::run_test(duplicated_graph,300.0);
+        let (_, _, bottleneck4, _) = EE::run_test_bin(duplicated_graph,300.0);
         assert_eq!(bottleneck, -13.0);
         assert_eq!(bottleneck2, -13.0);
         assert_eq!(bottleneck3, -13.0);
@@ -74,19 +73,19 @@ mod tests {
         let (_, _, bottleneck_big2) = Punnen::run(&mut duplicated_graph, 10000.0);
         let (_, _, bottleneck_big3, _) = EdgeElimination::run(&mut duplicated_graph, 10000.0);
         duplicated_graph = Util::duplicate_edges_mut(&graph_mut);
-        let (_, _, bottleneck_4) = EE::run_test(duplicated_graph,1000.0);
+        let (_, _, bottleneck_4, _) = EE::run_test_bin(duplicated_graph,1000.0);
         graph_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
         graph_mut.inverse_weights();
         duplicated_graph = Util::duplicate_edges_mut(&graph_mut);
-        let (_, _, bottleneck_small_4) = EE::run_test(duplicated_graph,100.0);
+        let (_, _, bottleneck_small_4, _) = EE::run_test_bin(duplicated_graph,100.0);
         graph_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
         graph_mut.inverse_weights();
         duplicated_graph = Util::duplicate_edges_mut(&graph_mut);
-        let (_, _, bottleneck_mid_4) = EE::run_test(duplicated_graph,700.0);
+        let (_, _, bottleneck_mid_4, _) = EE::run_test_bin(duplicated_graph,700.0);
         graph_mut = InputHandler::read_mut("data/wrp4-11_network123_233.json");
         graph_mut.inverse_weights();
         duplicated_graph = Util::duplicate_edges_mut(&graph_mut);
-        let (_, _, bottleneck_big_4) = EE::run_test(duplicated_graph,10000.0);
+        let (_, _, bottleneck_big_4, _) = EE::run_test_bin(duplicated_graph,10000.0);
         assert_eq!(bottleneck_small, -2.0);
         assert_eq!(bottleneck_small2, -2.0);
         assert_eq!(bottleneck_small3, -2.0);
@@ -113,7 +112,7 @@ mod tests {
         let (_, _, bottleneck) = Berman::run(&mut duplicated_graph, 150.0);
         let (_, _, bottleneck2) = Punnen::run(&mut duplicated_graph, 150.0);
         let (_, _, bottleneck3, _) = EdgeElimination::run(&mut duplicated_graph, 150.0);
-        let (_, _, bottleneck4) = EE::run_test(duplicated_graph,150.0);
+        let (_, _, bottleneck4, _) = EE::run_test_bin(duplicated_graph,150.0);
         assert_eq!(bottleneck, bottleneck2);
         assert_eq!(bottleneck, bottleneck3);
         assert_eq!(bottleneck, bottleneck4);
@@ -127,7 +126,7 @@ mod tests {
         let (_, _, bottleneck) = Berman::run(&mut duplicated_graph, 200.0);
         let (_, _, bottleneck2) = Punnen::run(&mut duplicated_graph, 200.0);
         let (_, _, bottleneck3, _) = EdgeElimination::run(&mut duplicated_graph, 200.0);
-        let (_, _, bottleneck4) = EE::run_test(duplicated_graph,200.0);
+        let (_, _, bottleneck4, _) = EE::run_test_bin(duplicated_graph,200.0);
         assert_eq!(bottleneck, bottleneck2);
         assert_eq!(bottleneck, bottleneck3);
         assert_eq!(bottleneck, bottleneck4);
@@ -147,7 +146,7 @@ mod tests {
                 let (_, _, bottleneck) = Berman::run(&mut duplicated_graph, budget);
                 let (_, _, bottleneck2) = Punnen::run(&mut duplicated_graph, budget);
                 let (_, _, bottleneck3, _) = EdgeElimination::run(&mut duplicated_graph, budget);
-                let (_, _, bottleneck4) = EE::run_test(duplicated_graph,budget);
+                let (_, _, bottleneck4, _) = EE::run_test_bin(duplicated_graph,budget);
                 if bottleneck != bottleneck2 || bottleneck != bottleneck3 || bottleneck != bottleneck4 {
                     panic!("Bottlenecks are not equal for {}, bottleneck Berman {}, bottleneck Punnen {}, bottleneck edge_elm {}, bottleneck EE {}", path, bottleneck, bottleneck2, bottleneck3, bottleneck4);
                 }

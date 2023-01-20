@@ -41,8 +41,6 @@ impl EdgeElimination {
         let mut iterations = 0;
         let mut checked_a;
         let mut checked_b;
-        let mut sort = true;
-        let mut bin = Garbage::new();
         while min < max {
             trace!("Min: {}, Max: {}", min, max);
             iterations += 1;
@@ -50,29 +48,23 @@ impl EdgeElimination {
             pivot_b = max - 1;
             pivot_a_weight = relevant_edges[pivot_a];
             pivot_b_weight = relevant_edges[pivot_b];
-            checked_a = Self::check_pivot_ee(graph, pivot_a_weight, budget, sort);
-            match checked_a.0 {
+            checked_a = Util::check_pivot(graph, pivot_a_weight, budget);
+            match checked_a {
                 PivotResult::Feasible(st) => {
                     trace!("Found feasible solution pivot_a [bottleneck {}, cost {}]", st.2, st.1);
                     graph.edges_mut().retain(|e| e.borrow().get_weight() <= st.2);
                     final_st = Some(st);
-                    //bin.add(Rc::new(graph));
-                    //graph = checked_a.1.unwrap();
                     max = pivot_a;
-                    //sort = false;
                 }
                 PivotResult::Infeasible => {
-                    checked_b = Self::check_pivot_ee(graph, pivot_b_weight, budget, sort);
-                    match checked_b.0 {
+                    checked_b = Util::check_pivot(graph, pivot_b_weight, budget);
+                    match checked_b {
                         PivotResult::Feasible(st) => {
                             trace!("Found feasible solution pivot_b [bottleneck {}, cost {}]", st.2, st.1);
-                            //bin.add(Rc::new(graph));
-                            //graph = checked_b.1.unwrap();
                             graph.edges_mut().retain(|e| e.borrow().get_weight() <= st.2);
                             final_st = Some(st);
                             min = pivot_a + 1;
                             max = pivot_b;
-                            //sort = false;
                         }
                         PivotResult::Infeasible => {
                             trace!("Infeasible pivot_b");
@@ -85,11 +77,11 @@ impl EdgeElimination {
         match final_st {
             Some(st) => {
                 trace!("Dual bound search finished [bottleneck {}, cost {}, iterations {}]", st.2, st.1, iterations);
-                (Some(st.0), st.1, st.2, bin)
+                (Some(st.0), st.1, st.2, Garbage::default())
             }
             None => {
                 warn!("No feasible solution found");
-                (None, 0.0, 0.0, bin)
+                (None, 0.0, 0.0, Garbage::default())
             }
         }
     }
@@ -104,22 +96,4 @@ impl EdgeElimination {
         });
     }
 
-    //also determine weight st to update lowerbound
-    fn check_pivot_ee(graph: &MutableGraph, pivot_weight: f64, budget: f64, sort: bool) -> (PivotResult, Option<MutableGraph>) {
-        let mut graph_below_pivot = graph.get_edges_weight_lower_or_eq_than(pivot_weight);
-        let (mut op_mst, mut cost, mut bottleneck) = (None, 0.0, 0.0);
-        match sort {
-            true => (op_mst, cost, bottleneck) = graph_below_pivot.min_sum_st(CalculationType::Cost),
-            false => (op_mst, cost, bottleneck) = graph_below_pivot.sorted_build(CalculationType::Cost)
-        }
-        match op_mst {
-            Some(st) => {
-                match cost {
-                    cost if cost <= budget => (PivotResult::Feasible((st, cost, bottleneck)), Some(graph_below_pivot)),
-                    _ => (PivotResult::Infeasible, None)
-                }
-            }
-            None => (PivotResult::Infeasible, None)
-        }
-    }
 }

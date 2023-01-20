@@ -62,7 +62,6 @@ impl Punnen {
         if cost > budget {
             trace!("Found infeasible solution: cost: {}", cost);
             let disjoint_graph = graph_union.get_edges_weight_bigger_than(median_unique);
-            //let new_union_edges = Util::union_edges(disjoint_graph.edges(), graph_below_w.edges_copy());
             let new_union_edges = Util::union_edges(disjoint_graph.edges(), op_min_cost_st.unwrap().edges_copy());
             lower_bound = median_unique;
             return Self::recursive_find(graph, budget, lower_bound, upper_bound, new_union_edges, unique_weights)

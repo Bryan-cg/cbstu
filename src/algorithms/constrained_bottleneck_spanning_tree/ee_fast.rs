@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::rc::Rc;
 use log::{debug, info, trace, warn};
 use crate::algorithms::quick_select::QuickSelect;
-use crate::algorithms::min_sum_spanning_tree::kruskal::CalculationType;
+use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, ConnectionType};
 use crate::algorithms::util::{PivotChecked, PivotResult, Util};
 use crate::datastructures::garbage::Garbage;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
@@ -46,17 +46,14 @@ impl EE {
         unimplemented!("Not implemented yet")
     }
 
+    //Avoid calculating expensive bounds
     pub fn run_test_bin(graph: MutableGraph, budget: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
         let mut unique_weights = Util::unique_weight_list(graph.edges(), f64::NEG_INFINITY, 0.0);
         unique_weights.sort_by(|a, b| a.partial_cmp(b).unwrap());
-        let upper_bound = unique_weights[unique_weights.len() - 1];
-        let lower_bound = unique_weights[0] + 1.0;
-        //Self::dbs(graph, &unique_weights, budget)
-        //Self::recursion(graph, &unique_weights, budget, lower_bound, upper_bound)
-        Self::bisection_alternative(graph, &unique_weights, budget, lower_bound, upper_bound)
+        Self::bisection_alternative(graph, &unique_weights, budget)
     }
 
-    pub fn bisection_alternative(mut graph: MutableGraph, unique_weights: &Vec<f64>, budget: f64, mut lower_bound: f64, mut upper_bound: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
+    pub fn bisection_alternative(mut graph: MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
         trace!("Bisection search");
         let mut max = unique_weights.len();
         let mut min = 0;
@@ -64,7 +61,7 @@ impl EE {
         let mut final_st = None;
         let mut cost = 0.0;
         let mut bottleneck = 0.0;
-        let mut bin = Garbage::new();
+        let mut bin = Garbage::new(); //Avoid dropping of graphs during algorithm, because this takes a lot of time
         while min <= max {
             pivot = (max + min) / 2;
             let mut graph_w = graph.get_edges_weight_lower_or_eq_than(unique_weights[pivot]);
@@ -75,22 +72,16 @@ impl EE {
                     final_st = Some(st.0);
                     cost = st.1;
                     bottleneck = st.2;
-                    upper_bound = bottleneck;
                     bin.add(Rc::new(graph));
                     graph = graph_w;
                 }
-                PivotChecked::BudgetExceeded(st) => {
-                    debug!("Budget exceeded pivot");
+                PivotChecked::Infeasible(st) => {
+                    debug!("Budget exceeded pivot or disconnected spanning tree");
                     let disjoint_graph = graph.get_edges_weight_bigger_than(unique_weights[pivot]);
-                    let union_edges = Util::union_edges(disjoint_graph.edges(), st.edges_copy());
+                    let union_edges = Util::union_edges(disjoint_graph.edges(), st.edges_copy());//avoid edges copy here and move ownership
                     let nodes = graph.nodes_copy();
                     bin.add(Rc::new(graph));
                     graph = MutableGraph::new(nodes, union_edges);
-                    lower_bound = unique_weights[pivot];
-                    min = pivot + 1;
-                },
-                PivotChecked::Infeasible => {
-                    debug!("Infeasible pivot");
                     min = pivot + 1;
                 }
             }
@@ -99,15 +90,15 @@ impl EE {
     }
 
     fn check_pivot_bisection(graph: &mut MutableGraph, budget: f64) -> PivotChecked {
-        let (op_mst, cost, bottleneck) = graph.min_sum_st(CalculationType::Cost);
-        match op_mst {
-            Some(st) => {
+        let (connection_type, st, cost, bottleneck) = graph.mcst(CalculationType::Cost);
+        match connection_type {
+            ConnectionType::Connected => {
                 match cost {
                     cost if cost <= budget => PivotChecked::Feasible((st, cost, bottleneck)),
-                    _ => PivotChecked::BudgetExceeded(st)
+                    _ => PivotChecked::Infeasible(st)
                 }
             }
-            None => PivotChecked::Infeasible
+            _ => PivotChecked::Infeasible(st)
         }
     }
 

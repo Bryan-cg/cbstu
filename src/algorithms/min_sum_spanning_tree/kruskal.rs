@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use log::{debug, error, info, trace};
+use crate::algorithms::min_sum_spanning_tree::kruskal::ConnectionType::{Connected, Disconnected};
 use crate::algorithms::util::Util;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::datastructures::uf::union_find::UF;
@@ -10,6 +11,11 @@ const FLOATING_POINT_EPSILON: f64 = 1.0E-12;
 pub enum CalculationType {
     Cost,
     Weight,
+}
+
+pub enum ConnectionType {
+    Connected,
+    Disconnected,
 }
 
 pub struct Kruskal();
@@ -23,11 +29,22 @@ impl Kruskal {
             CalculationType::Weight => graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()),
         }
         let end = start.elapsed().as_nanos() as f64 / 1_000_000.0;
-        trace!("Kruskal over {} edges took {} ms", graph.edges().len(), end);
+        trace!("Kruskal sorting over {} edges took {} ms", graph.edges().len(), end);
         Self::sorted_build(graph, calculation_type, budget)
     }
 
-    pub fn sorted_build(graph: &mut MutableGraph, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
+    pub fn run(graph: &mut MutableGraph, calculation_type: CalculationType) -> (ConnectionType, MutableGraph, f64, f64) {
+        let start = std::time::Instant::now();
+        match calculation_type {
+            CalculationType::Cost => graph.edges_mut().sort_by(|a, b| a.borrow().get_cost().partial_cmp(&b.borrow().get_cost()).unwrap()),
+            CalculationType::Weight => graph.edges_mut().sort_by(|a, b| a.borrow().get_weight().partial_cmp(&b.borrow().get_weight()).unwrap()),
+        }
+        let end = start.elapsed().as_nanos() as f64 / 1_000_000.0;
+        trace!("Kruskal sorting over {} edges took {} ms", graph.edges().len(), end);
+        Self::sorted_build_bisection(graph, calculation_type)
+    }
+
+    fn sorted_build(graph: &mut MutableGraph, calculation_type: CalculationType, budget: Option<f64>) -> (Option<MutableGraph>, f64, f64) {
         let mut st_edges = Vec::new();
         let mut weight = 0.0;
         let inverse = matches!(graph.edges()[0].borrow().get_weight(), w if w < 0.0);
@@ -71,6 +88,42 @@ impl Kruskal {
         //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
         debug_assert!(st.is_spanning_tree());
         (Some(st), weight, bottleneck)
+    }
+
+    fn sorted_build_bisection(graph: &mut MutableGraph, calculation_type: CalculationType) -> (ConnectionType, MutableGraph, f64, f64) {
+        let mut st_edges = Vec::new();
+        let mut weight = 0.0;
+        let inverse = matches!(graph.edges()[0].borrow().get_weight(), w if w < 0.0);
+        let mut bottleneck = match inverse {
+            true => f64::NEG_INFINITY,
+            false => f64::INFINITY,
+        };
+        let mut uf = UF::new(graph.nodes().len() as i32);
+        for edge in graph.edges() {
+            let (v, w) = edge.borrow().endpoints();
+            if !uf.connected(v, w) {
+                uf.union(v, w);
+                st_edges.push(Rc::clone(edge));
+                match calculation_type {
+                    CalculationType::Cost => {
+                        weight += edge.borrow().get_cost();
+                        bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+                    }
+
+                    CalculationType::Weight => {
+                        weight += edge.borrow().get_weight();
+                        bottleneck = Util::update_bottleneck_mut(bottleneck, edge, inverse);
+                    }
+                }
+            }
+        }
+        let st = MutableGraph::new(graph.nodes_copy(), st_edges);
+        if uf.count() > 1 {
+            return (Disconnected, st, weight, bottleneck);
+        }
+        //debug_assert!(Self::check_optimality(&st, weight, calculation_type));
+        debug_assert!(st.is_spanning_tree());
+        (Connected, st, weight, bottleneck)
     }
 
     fn check_optimality(st: &MutableGraph, weight: f64, calculation_type: CalculationType) -> bool {

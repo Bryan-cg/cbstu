@@ -25,8 +25,7 @@ pub enum PivotResult {
 
 pub enum PivotChecked{
     Feasible((MutableGraph, f64, f64)),
-    BudgetExceeded(MutableGraph),
-    Infeasible,
+    Infeasible(MutableGraph),
 }
 
 pub struct Util();
@@ -103,6 +102,12 @@ impl Util {
     }
 
     #[inline]
+    ///Return length of slice with weight bigger then lower-bound en smaller then or equal to upper bound
+    pub fn relevant_slice_size(weights: &[f64], lower_bound: f64, upper_bound: f64) -> usize {
+        weights.iter().filter(|&&x| x > lower_bound && x <= upper_bound).count()
+    }
+
+    #[inline]
     pub(crate) fn check_pivot(graph: &MutableGraph, pivot_weight: f64, budget: f64) -> PivotResult {
         let mut graph_below_pivot = graph.get_edges_weight_lower_or_eq_than(pivot_weight);
         let (op_mst, cost, bottleneck) = graph_below_pivot.min_sum_st(CalculationType::Cost);
@@ -110,7 +115,10 @@ impl Util {
             Some(st) => {
                 match cost {
                     cost if cost <= budget => PivotResult::Feasible((st, cost, bottleneck)),
-                    _ => PivotResult::Infeasible
+                    _ => {
+                        trace!("Infeasible cost {} > {}", cost, budget);
+                        PivotResult::Infeasible
+                    }
                 }
             }
             None => PivotResult::Infeasible
