@@ -1,5 +1,4 @@
 #![allow(warnings)]
-
 use std::{env, fs};
 use std::time::Instant;
 use log::info;
