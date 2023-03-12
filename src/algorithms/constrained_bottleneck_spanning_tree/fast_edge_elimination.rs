@@ -29,7 +29,7 @@ impl FastEdgeElimination {
 
     pub fn bisection_elimination_search(mut graph: MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64, Garbage) {
         trace!("Bisection search");
-        let mut max = unique_weights.len();
+        let mut max = unique_weights.len() - 1;
         let mut min = 0;
         let mut pivot;
         let mut final_st = None;
@@ -37,7 +37,7 @@ impl FastEdgeElimination {
         let mut bottleneck = 0.0;
         let mut bin = Garbage::new();
         while min <= max {
-            pivot = (max + min) / 2;
+            pivot = ((max as f64 + min as f64) / 2.0).floor() as usize;
             let mut graph_w = graph.smaller_or_eq_than(unique_weights[pivot]);
             match Self::check_pivot_bisection(&mut graph_w, budget) {
                 PivotChecked::Feasible(st) => {
@@ -51,8 +51,11 @@ impl FastEdgeElimination {
                 }
                 PivotChecked::Infeasible(st) => {
                     debug!("Budget exceeded pivot or disconnected spanning tree");
+                    let edges_before = graph.edges().len();
                     let disjoint_graph = graph.bigger_than(unique_weights[pivot]);
-                    let union_edges = Util::union_edges(disjoint_graph.edges(), st.edges());//avoid edges copy here and move ownership
+                    let union_edges = Util::union_edges(disjoint_graph.edges(), st.edges());
+                    let edges_after = union_edges.len();
+                    trace!("Edges removed: {}", edges_before - edges_after);
                     let nodes = graph.nodes_copy();
                     bin.add(Rc::new(graph));
                     graph = MutableGraph::new(nodes, union_edges);

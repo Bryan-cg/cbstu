@@ -6,6 +6,7 @@ use crate::algorithms::min_bottleneck_spanning_tree::camerini::MBST;
 use crate::algorithms::min_sum_spanning_tree::kruskal::{CalculationType, ConnectionType, Kruskal};
 use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::node::Node;
+use crate::print_edges;
 
 /// Graph with list of immutable nodes and mutable edges. Single threaded.
 pub struct MutableGraph {
@@ -141,10 +142,11 @@ impl MutableGraph {
         let mut iterations = 0;
         while !stack.is_empty() {
             iterations += 1;
-            if iterations % 5000 == 0 {
+            if iterations % 10000 == 0 {
                 trace!("DFS progress: {}/{}", iterations, max_iterations);
             }
             let node = stack.pop().unwrap();
+            trace!("Visiting node {}", node);
             visited_nodes[node] = true;
             let edges = self.adj_edges(node);
             for edge in edges {
@@ -159,7 +161,7 @@ impl MutableGraph {
         }
         for (i, visited) in visited_nodes.iter().enumerate() {
             if !visited {
-                warn!("Node {} not visited in ST", i);
+                trace!("Node {} not visited in ST", i);
                 return false;
             }
         }
@@ -172,6 +174,16 @@ impl MutableGraph {
         self.edges.iter().for_each(|edge| {
             edge.borrow_mut().inverse_weights();
         });
+    }
+
+    pub fn number_of_edges_upgraded(&self) -> usize {
+        self.edges.iter().fold(0, |acc, edge| {
+            if edge.borrow().get_cost() > 0.0 {
+                acc + 1
+            } else {
+                acc
+            }
+        })
     }
 }
 

@@ -4,6 +4,7 @@ pub struct UF {
     count: i32,
 }
 
+//todo: add union by rank
 impl UF {
     pub fn new(n: i32) -> UF {
         if n < 0 { panic!("Number of nodes must be non-negative"); }

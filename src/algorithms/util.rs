@@ -13,7 +13,7 @@ use crate::datastructures::graph::mutable_graph::MutableGraph;
 macro_rules! print_edges {
     ($edges:expr) => {
         $edges.iter().for_each(|edge| {
-            println!("{} - {}, {}, {}", edge.borrow().endpoints().0, edge.borrow().endpoints().1, edge.borrow().get_weight(), edge.borrow().is_upgraded());
+            println!("{} - {}, {} - {}, {}, {}", edge.borrow().endpoints().0, edge.borrow().endpoints().1, edge.borrow().original_endpoints().0, edge.borrow().original_endpoints().1, edge.borrow().get_weight(), edge.borrow().is_upgraded());
         });
     };
 }

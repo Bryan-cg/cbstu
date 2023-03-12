@@ -8,18 +8,15 @@ use crate::datastructures::graph::edge::Edge;
 use crate::datastructures::graph::mutable_graph::MutableGraph;
 use crate::datastructures::graph::node::Node;
 use crate::datastructures::uf::union_find::UF;
+use crate::print_edges;
 
 pub struct MBST();
 
 impl MBST {
     pub fn run(graph: &mut MutableGraph) -> (Option<MutableGraph>, f64) {
-        trace!("Calculating MBST [Camerini et al.]");
-        let begin = std::time::Instant::now();
         let st_edges = Self::recursive_search(graph);
         let bottleneck = Self::find_bottleneck(&st_edges);
         let st = MutableGraph::new(graph.nodes_copy(), st_edges);
-        let end = begin.elapsed().as_nanos() as f64 / 1_000_000.0;
-        trace!("MBST [Camerini et al.] took {} ms", end);
         debug_assert!(st.is_spanning_tree());
         (Some(st), bottleneck)
     }

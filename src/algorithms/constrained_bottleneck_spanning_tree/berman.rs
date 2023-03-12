@@ -38,14 +38,14 @@ impl Berman {
 
     fn bisection_search(graph: &MutableGraph, unique_weights: &Vec<f64>, budget: f64) -> (Option<MutableGraph>, f64, f64) {
         trace!("Bisection search");
-        let mut max = unique_weights.len();
+        let mut max = unique_weights.len() - 1;
         let mut min = 0;
         let mut pivot;
         let mut final_st = None;
         let mut cost = 0.0;
         let mut bottleneck = 0.0;
         while min <= max {
-            pivot = (max + min) / 2;
+            pivot = ((max as f64 + min as f64) / 2.0).floor() as usize;
             match Util::check_pivot(graph, unique_weights[pivot], budget) {
                 PivotResult::Feasible(st) => {
                     debug!("Feasible pivot [bottleneck: {}, cost: {}]", st.2, st.1);

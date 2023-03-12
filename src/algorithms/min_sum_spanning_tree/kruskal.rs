@@ -65,6 +65,7 @@ impl Kruskal {
         let (uf, st_edges, mut weight, mut bottleneck) = Self::construct(graph, calculation_type);
         let st = MutableGraph::new(graph.nodes_copy(), st_edges);
         if uf.count() > 1 {
+            trace!("Kruskal found {} disconnected components", uf.count());
             return (Disconnected, st, weight, bottleneck);
         }
         debug_assert!(st.is_spanning_tree());

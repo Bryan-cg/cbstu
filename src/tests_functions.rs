@@ -18,6 +18,9 @@ mod tests {
         let (_, _, bottleneck_big_budget_berman) = Berman::run(&mut duplicated_graph, 10000.0);
         let (_, _, bottleneck_small_budget_berman) = Berman::run(&mut duplicated_graph, 100.0);
         let (_, _, bottleneck_big_budget_punnen) = Punnen::run(&mut duplicated_graph, 10000.0);
+        graph_mut = InputHandler::read_mut("test_data/abilene--D-B-M-N-C-A-N-N_network12_15.json");
+        graph_mut.inverse_weights();
+        duplicated_graph = Util::duplicate_edges(&graph_mut);
         let (_, _, bottleneck_small_budget_punnen) = Punnen::run(&mut duplicated_graph, 100.0);
         let (_, _, bottleneck_big_budget_edg, _) = EdgeEliminationOld::run(&mut duplicated_graph, 10000.0);
         let (_, _, bottleneck_small_budget_edg, _) = EdgeEliminationOld::run(&mut duplicated_graph, 100.0);
